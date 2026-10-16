@@ -1,0 +1,853 @@
+<artifact identifier="midterm-hq" type="text/html" title="MidTerm HQ — Study Prep Tracker">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MidTerm HQ — Study Tracker</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body{font-family:ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;}
+input[type=range]{accent-color:#6366f1;}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100">
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef} = React;
+
+/* ================= CONSTANTS & HELPERS ================= */
+const LS_KEY='midterm_hq_v1';
+const DAYS=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const COLORS=['#6366f1','#22c55e','#f59e0b','#ec4899','#06b6d4','#ef4444','#a855f7','#14b8a6'];
+const PTYPES=[
+{id:'percent',label:'Syllabus %',desc:'Slide your syllabus completion from 0–100%'},
+{id:'checklist',label:'Topic checklist',desc:'List topics/units, tick them off as you finish'},
+{id:'chapters',label:'Chapters done',desc:'Chapters completed out of total'},
+{id:'hours',label:'Study hours',desc:'Log study sessions toward a target hour goal'},
+];
+const BT={
+class:'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
+study:'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
+break:'bg-amber-500/20 text-amber-300 border-amber-500/30',
+other:'bg-slate-500/20 text-slate-300 border-slate-500/30'
+};
+const BTLabel={class:'Class',study:'Self-study',break:'Break',other:'Other'};
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const pad=n=>String(n).padStart(2,'0');
+const dstr=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const todayStr=()=>dstr(new Date());
+const todayIdx=()=>(new Date().getDay()+6)%7;
+const timeToMin=t=>{const p=t.split(':').map(Number);return p[0]*60+p[1];};
+const fmtTime=(t,f)=>{const p=t.split(':').map(Number);const h=p[0],m=p[1];
+if(f==='24')return pad(h)+':'+pad(m);
+const ap=h>=12?'PM':'AM';const h12=h%12||12;return h12+':'+pad(m)+' '+ap;};
+const fmtMins=x=>{x=Math.round(x);const h=Math.floor(x/60),m=x%60;return h?(m?h+'h '+m+'m':h+'h'):m+'m';};
+const fmtSecs=s=>{const h=Math.floor(s/3600),m=Math.floor((s%3600)/60),ss=s%60;
+return h>0?h+':'+pad(m)+':'+pad(ss):pad(m)+':'+pad(ss);};
+const clampPct=x=>Math.max(0,Math.min(100,x));
+
+function defaultState(){return{
+settings:{name:'',examName:'Mid-Terms',examDate:'',timeFormat:'12',focusMin:25,breakMin:5},
+subjects:[],
+timetable:{0:[],1:[],2:[],3:[],4:[],5:[],6:[]},
+sessions:[]
+};}
+function loadState(){try{const r=localStorage.getItem(LS_KEY);if(r)return JSON.parse(r);}catch(e){}return null;}
+
+function loggedMinutes(sessions,subjectId){return sessions.filter(s=>s.subjectId===subjectId).reduce((a,b)=>a+b.minutes,0);}
+function subjectProgress(sub,sessions){
+switch(sub.progressType){
+case 'percent': return clampPct(sub.current||0);
+case 'chapters': return sub.total?clampPct((sub.done||0)/sub.total100):0;
+case 'hours': return sub.targetHours?clampPct(loggedMinutes(sessions,sub.id)/60/sub.targetHours100):0;
+case 'checklist':{const t=sub.topics||[];return t.length?clampPct(t.filter(x=>x.done).length/t.length*100):0;}
+default: return 0;
+}
+}
+function calcStreak(sessions){
+const set=new Set(sessions.map(s=>s.date));
+let streak=0;const d=new Date();
+if(!set.has(dstr(d)))d.setDate(d.getDate()-1);
+while(set.has(dstr(d))){streak++;d.setDate(d.getDate()-1);}
+return streak;
+}
+function weekMinutes(sessions){
+const now=new Date();const mon=new Date(now);
+mon.setDate(now.getDate()-((now.getDay()+6)%7));mon.setHours(0,0,0,0);
+const monStr=dstr(mon);
+return sessions.filter(s=>s.date>=monStr&&s.date<=todayStr()).reduce((a,b)=>a+b.minutes,0);
+}
+function last7Data(sessions){
+const out=[];
+for(let i=6;i>=0;i--){
+const d=new Date();d.setDate(d.getDate()-i);const ds=dstr(d);
+const mins=sessions.filter(s=>s.date===ds).reduce((a,b)=>a+b.minutes,0);
+out.push({label:DAYS[(d.getDay()+6)%7].charAt(0),mins,isToday:i===0});
+}
+return out;
+}
+
+/* ================= SMALL UI PIECES ================= */
+const Bar=({pct,color,h})=>(
+<div className={"w-full bg-slate-800 rounded-full overflow-hidden "+(h||'h-2.5')}>
+<div className="h-full rounded-full transition-all duration-500"
+style={{width:clampPct(pct)+'%',background:'linear-gradient(90deg,'+color+'88,'+color+')'}}/>
+</div>
+);
+const Badge=({children,cls})=>(<span className={"text-[11px] px-2 py-0.5 rounded-full border font-medium "+cls}>{children}</span>);
+const Card=({children,cls})=>(<div className={"bg-slate-900/70 border border-slate-800 rounded-2xl p-5 "+(cls||'')}>{children}</div>);
+const Btn=({children,onClick,cls,disabled})=>(
+<button onClick={onClick} disabled={disabled}
+className={"px-4 py-2 rounded-xl font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed "+(cls||'bg-indigo-600 hover:bg-indigo-500 text-white')}>{children}</button>
+);
+const inputCls="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500";
+const labelCls="block text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1.5";
+
+/* ================= SUBJECT MODAL ================= */
+function SubjectModal({initial,onSave,onClose,toast}){
+const isEdit=!!initial;
+const [name,setName]=useState(isEdit?initial.name:'');
+const [color,setColor]=useState(isEdit?initial.color:COLORS[0]);
+const [ptype,setPtype]=useState(isEdit?initial.progressType:'percent');
+const [targetHours,setTargetHours]=useState(isEdit&&initial.targetHours?initial.targetHours:20);
+const [total,setTotal]=useState(isEdit&&initial.total?initial.total:10);
+const [topicsText,setTopicsText]=useState(
+isEdit&&initial.topics?initial.topics.map(t=>t.name).join('\n'):'');
+const save=()=>{
+if(!name.trim()){toast('Give the subject a name ✏️');return;}
+const topics=topicsText.split('\n').map(t=>t.trim()).filter(Boolean).map(t=>{
+const ex=isEdit&&initial.topics?initial.topics.find(x=>x.name===t):null;
+return ex?ex:{id:uid(),name:t,done:false};
+});
+onSave({
+id:isEdit?initial.id:uid(),
+name:name.trim(),color,progressType:ptype,
+current:isEdit&&initial.current?initial.current:0,
+done:isEdit&&initial.done?initial.done:0,
+total:Number(total)||0,
+targetHours:Number(targetHours)||0,
+topics
+});
+};
+return(
+<div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+<div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={e=>e.stopPropagation()}>
+<div className="flex items-center justify-between mb-5">
+<h3 className="text-lg font-bold">{isEdit?'✏️ Edit subject':'➕ Add subject'}</h3>
+<button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-xl leading-none">✕</button>
+</div>
+<div className="space-y-4">
+<div>
+<label className={labelCls}>Subject name</label>
+<input className={inputCls} value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Engineering Mathematics"/>
+</div>
+<div>
+<label className={labelCls}>Color</label>
+<div className="flex gap-2 flex-wrap">
+{COLORS.map(c=>(
+<button key={c} onClick={()=>setColor(c)}
+className={"w-8 h-8 rounded-full transition-transform "+(color===c?'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110':'')}
+style={{background:c}}/>
+))}
+</div>
+</div>
+<div>
+<label className={labelCls}>Progress tracking type</label>
+<div className="grid grid-cols-2 gap-2">
+{PTYPES.map(pt=>(
+<button key={pt.id} onClick={()=>setPtype(pt.id)}
+className={"text-left p-3 rounded-xl border transition-all "+(ptype===pt.id?'border-indigo-500 bg-indigo-500/10':'border-slate-700 hover:border-slate-500')}>
+<div className="text-sm font-semibold">{pt.label}</div>
+<div className="text-[11px] text-slate-400 mt-0.5 leading-snug">{pt.desc}</div>
+</button>
+))}
+</div>
+</div>
+{ptype==='hours'&&(
+<div>
+<label className={labelCls}>Target hours</label>
+<input type="number" min="1" className={inputCls} value={targetHours} onChange={e=>setTargetHours(e.target.value)}/>
+</div>
+)}
+{ptype==='chapters'&&(
+<div>
+<label className={labelCls}>Total chapters/units</label>
+<input type="number" min="1" className={inputCls} value={total} onChange={e=>setTotal(e.target.value)}/>
+</div>
+)}
+{ptype==='checklist'&&(
+<div>
+<label className={labelCls}>Topics (one per line)</label>
+<textarea rows="4" className={inputCls} value={topicsText} onChange={e=>setTopicsText(e.target.value)}
+placeholder={'Unit 1 – Limits\nUnit 2 – Derivatives\nUnit 3 – Integration'}/>
+</div>
+)}
+</div>
+<div className="flex gap-3 mt-6">
+<Btn onClick={save} cls="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white">{isEdit?'Save changes':'Add subject'}</Btn>
+<Btn onClick={onClose} cls="bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</Btn>
+</div>
+</div>
+</div>);
+}
+
+/* ================= SUBJECT CARD ================= */
+function SubjectCard({s,sessions,updateSubject,delSubject,onEdit,addSession,toast}){
+const pct=subjectProgress(s,sessions);
+const hrs=loggedMinutes(sessions,s.id)/60;
+const [newTopic,setNewTopic]=useState('');
+const [logMin,setLogMin]=useState('');
+const [logDate,setLogDate]=useState(todayStr());
+const addTopic=()=>{
+const v=newTopic.trim();if(!v)return;
+updateSubject(s.id,{topics:[...(s.topics||[]),{id:uid(),name:v,done:false}]});
+setNewTopic('');
+};
+const typeBadgeCls='bg-slate-800 text-slate-300 border-slate-700';
+return(
+<Card cls="flex flex-col">
+<div className="flex items-start justify-between mb-3">
+<div className="flex items-center gap-2.5 min-w-0">
+<span className="w-3 h-3 rounded-full shrink-0" style={{background:s.color}}></span>
+<h3 className="font-bold truncate">{s.name}</h3>
+</div>
+<Badge cls={typeBadgeCls}>{PTYPES.find(p=>p.id===s.progressType).label}</Badge>
+</div>
+<div className="mb-1 flex items-end justify-between">
+<span className="text-2xl font-extrabold" style={{color:s.color}}>{Math.round(pct)}%</span>
+{s.progressType==='hours'&&<span className="text-xs text-slate-400">{hrs.toFixed(1)} / {s.targetHours} h</span>}
+{s.progressType==='chapters'&&<span className="text-xs text-slate-400">{s.done||0} / {s.total} chapters</span>}
+{s.progressType==='checklist'&&<span className="text-xs text-slate-400">{(s.topics||[]).filter(t=>t.done).length} / {(s.topics||[]).length} topics</span>}
+{s.progressType==='percent'&&<span className="text-xs text-slate-400">syllabus done</span>}
+</div>
+<Bar pct={pct} color={s.color}/>
+
+{s.progressType==='percent'&&(
+<input type="range" min="0" max="100" value={s.current||0}
+onChange={e=>updateSubject(s.id,{current:+e.target.value})} className="mt-4 w-full"/>
+)}
+
+{s.progressType==='chapters'&&(
+<div className="flex items-center gap-2 mt-4">
+<input type="number" min="0" className={inputCls} value={s.done||0} onChange={e=>updateSubject(s.id,{done:Math.max(0,+e.target.value)})}/>
+<span className="text-slate-500">/</span>
+<input type="number" min="1" className={inputCls} value={s.total||''} onChange={e=>updateSubject(s.id,{total:Math.max(0,+e.target.value)})}/>
+</div>
+)}
+
+{s.progressType==='hours'&&(
+<div className="mt-4 space-y-2">
+<div className="flex gap-2">
+<input type="date" className={inputCls} value={logDate} onChange={e=>setLogDate(e.target.value)}/>
+<input type="number" min="1" placeholder="mins" className={inputCls+' w-24'} value={logMin} onChange={e=>setLogMin(e.target.value)}/>
+<Btn onClick={()=>{
+const m=parseInt(logMin);if(!m||m<=0){toast('Enter minutes ⏱️');return;}
+addSessionTo(s.id,m,logDate);setLogMin('');
+}} cls="bg-emerald-600 hover:bg-emerald-500 text-white px-3">Log</Btn>
+</div>
+</div>
+)}
+
+{s.progressType==='checklist'&&(
+<div className="mt-4">
+<div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
+{(s.topics||[]).map(t=>(
+<div key={t.id} className="flex items-center gap-2 group">
+<input type="checkbox" checked={t.done}
+onChange={()=>updateSubject(s.id,{topics:s.topics.map(x=>x.id===t.id?{...x,done:!x.done}:x)})}
+className="w-4 h-4 accent-emerald-500 cursor-pointer"/>
+<span className={"text-sm flex-1 "+(t.done?'line-through text-slate-500':'text-slate-200')}>{t.name}</span>
+<button onClick={()=>updateSubject(s.id,{topics:s.topics.filter(x=>x.id!==t.id)})}
+className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity text-sm">✕</button>
+</div>
+))}
+{(s.topics||[]).length===0&&<p className="text-xs text-slate-500">No topics yet — add some below 👇</p>}
+</div>
+<div className="flex gap-2 mt-2">
+<input className={inputCls} placeholder="Add topic + Enter" value={newTopic}
+onChange={e=>setNewTopic(e.target.value)} onKeyDown={e=>{if(e.key==='Enter'){e.preventDefault();addTopic();}}}/>
+<Btn onClick={addTopic} cls="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3">+</Btn>
+</div>
+</div>
+)}
+
+<div className="flex gap-2 mt-4 pt-3 border-t border-slate-800">
+<button onClick={onEdit} className="text-xs text-slate-400 hover:text-indigo-400 font-medium">Edit</button>
+<span className="text-slate-700">·</span>
+<button onClick={()=>{if(confirm('Delete "'+s.name+'" and all its sessions?'))delSubject(s.id);}}
+className="text-xs text-slate-400 hover:text-red-400 font-medium">Delete</button>
+</div>
+</Card>);
+}
+// helper used inside card (needs state-level addSession with custom date)
+let addSessionTo=null;
+
+/* ================= DASHBOARD ================= */
+function Dashboard({state,go,openAdd}){
+const {settings,subjects,sessions}=state;
+const fmt=settings.timeFormat;
+const overall=subjects.length?subjects.reduce((a,s)=>a+subjectProgress(s,sessions),0)/subjects.length:0;
+const tIdx=todayIdx();
+const nowMin=new Date().getHours()*60+new Date().getMinutes();
+const todayBlocks=(state.timetable[tIdx]||[]).slice().sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
+const streak=calcStreak(sessions);
+const wk=weekMinutes(sessions);
+const chart=last7Data(sessions);
+const maxChart=Math.max(60,...chart.map(c=>c.mins));
+let cd=null;
+if(settings.examDate){
+const ex=new Date(settings.examDate+'T00:00:00');const now=new Date();now.setHours(0,0,0,0);
+cd={days:Math.round((ex-now)/86400000)};
+}
+const greetH=new Date().getHours();
+const greet=greetH<12?'Good morning':greetH<17?'Good afternoon':'Good evening';
+const greetEmoji=greetH<12?'🌅':greetH<17?'☀️':'🌙';
+return(
+<div className="space-y-5">
+<div className="flex flex-wrap items-center justify-between gap-3">
+<div>
+<h1 className="text-2xl font-extrabold">{greetEmoji} {greet}{settings.name?', '+settings.name:''}!</h1>
+<p className="text-sm text-slate-400">{new Date().toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})}</p>
+</div>
+<div className="flex gap-2">
+<Btn onClick={()=>go('timer')} cls="bg-emerald-600 hover:bg-emerald-500 text-white">⏱️ Start studying</Btn>
+<Btn onClick={openAdd} cls="bg-indigo-600 hover:bg-indigo-500 text-white">➕ Add subject</Btn>
+</div>
+</div>
+
+<div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+<Card cls="relative overflow-hidden">
+{cd?(
+<div>
+<p className={labelCls}>{settings.examName||'Mid-Terms'}</p>
+<div className="flex items-baseline gap-2">
+<span className={"text-5xl font-extrabold "+(cd.days<7?'text-red-400':cd.days<21?'text-amber-400':'text-emerald-400')}>
+{cd.days>0?cd.days:cd.days===0?'🎉':'—'}
+</span>
+<span className="text-slate-400 text-sm">{cd.days>0?'days left':cd.days===0?'IT\'S TODAY':'completed'}</span>
+</div>
+<p className="text-xs text-slate-500 mt-2">{new Date(settings.examDate+'T00:00:00').toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</p>
+</div>
+):(
+<div>
+<p className={labelCls}>Exam countdown</p>
+<p className="text-slate-400 text-sm">Set your mid-term date in<br/>⚙️ Settings to start the countdown</p>
+</div>
+)}
+</Card>
+
+<Card>
+<p className={labelCls}>Overall readiness</p>
+<div className="flex items-baseline gap-2 mb-2">
+<span className="text-5xl font-extrabold text-indigo-400">{Math.round(overall)}%</span>
+</div>
+<Bar pct={overall} color="#6366f1"/>
+<p className="text-xs text-slate-500 mt-2">Average across {subjects.length} subject{subjects.length!==1?'s':''}</p>
+</Card>
+
+<Card>
+<p className={labelCls}>This week</p>
+<div className="grid grid-cols-2 gap-3">
+<div><p className="text-2xl font-extrabold text-emerald-400">{fmtMins(wk)}</p><p className="text-[11px] text-slate-500">studied</p></div>
+<div><p className="text-2xl font-extrabold text-amber-400">{streak}🔥</p><p className="text-[11px] text-slate-500">day streak</p></div>
+<div><p className="text-2xl font-extrabold text-sky-400">{sessions.length}</p><p className="text-[11px] text-slate-500">total sessions</p></div>
+<div><p className="text-2xl font-extrabold text-pink-400">{subjects.length}</p><p className="text-[11px] text-slate-500">subjects</p></div>
+</div>
+</Card>
+</div>
+
+<div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+<Card>
+<p className={labelCls}>Study minutes — last 7 days</p>
+<div className="flex items-end gap-3 h-32 mt-2">
+{chart.map((c,i)=>(
+<div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
+<span className="text-[10px] text-slate-500">{c.mins>0?fmtMins(c.mins):''}</span>
+<div className="w-full rounded-t-lg transition-all duration-500"
+style={{height:Math.max(c.mins>0?6:2,(c.mins/maxChart)*100)+'%',
+background:c.isToday?'#6366f1':'#334155',opacity:c.isToday?1:.8}}/>
+<span className={"text-[11px] "+(c.isToday?'text-indigo-400 font-bold':'text-slate-500')}>{c.label}</span>
+</div>
+))}
+</div>
+</Card>
+
+<Card>
+<div className="flex items-center justify-between mb-2">
+<p className={labelCls+' mb-0'}>Today's schedule · {DAYS[tIdx]}</p>
+<button onClick={()=>go('timetable')} className="text-xs text-indigo-400 hover:text-indigo-300">Edit →</button>
+</div>
+{todayBlocks.length===0?(
+<p className="text-sm text-slate-500 py-6 text-center">Nothing scheduled today — add blocks in your timetable 📅</p>
+):(
+<div className="space-y-2 mt-2">
+{todayBlocks.map(b=>{
+const isNow=timeToMin(b.start)<=nowMin&&nowMin<timeToMin(b.end);
+const isPast=timeToMin(b.end)<=nowMin;
+return(
+<div key={b.id} className={"flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all "+
+(isNow?'border-indigo-500/60 bg-indigo-500/10':isPast?'border-slate-800 opacity-50':'border-slate-800 bg-slate-800/40')}>
+<div className="text-xs text-slate-400 w-28 shrink-0 font-mono">
+{fmtTime(b.start,fmt)} – {fmtTime(b.end,fmt)}
+</div>
+<span className="text-sm font-medium flex-1 truncate">{b.label}</span>
+{isNow?<Badge cls="bg-indigo-500 text-white border-indigo-400 animate-pulse">NOW</Badge>
+:<Badge cls={BT[b.type]}>{BTLabel[b.type]}</Badge>}
+</div>);
+})}
+</div>
+)}
+</Card>
+</div>
+
+
+<div className="flex items-center justify-between mb-3">
+<p className={labelCls+' mb-0'}}>Subject progress</p>
+<button onClick={()=>go('subjects')} className="text-xs text-indigo-400 hover:text-indigo-300">Manage →</button>
+</div>
+{subjects.length===0?(
+<div className="text-center py-8 border-2 border-dashed border-slate-800 rounded-xl">
+<p className="text-slate-400 text-sm">No subjects yet. Add your first subject to start tracking! 📚</p>
+</div>
+):(
+<div className="space-y-3.5">
+{subjects.map(s=>(
+<div key={s.id}>
+<div className="flex justify-between text-sm mb-1.5">
+<span className="font-medium flex items-center gap-2"><span className="w-2 h-2 rounded-full" style={{background:s.color}}></span>{s.name}</span>
+<span className="text-slate-400">{Math.round(subjectProgress(s,sessions))}%</span>
+</div>
+<Bar pct={subjectProgress(s,sessions)} color={s.color}/>
+</div>
+))}
+</div>
+)}
+
+/* ================= TIMETABLE ================= */
+function TimetableView({state,update}){
+const fmt=state.settings.timeFormat;
+const [day,setDay]=useState(todayIdx());
+const [editing,setEditing]=useState(null);
+const [start,setStart]=useState('18:00');
+const [end,setEnd]=useState('19:00');
+const [label,setLabel]=useState('');
+const [btype,setBtype]=useState('study');
+const blocks=(state.timetable[day]||[]).slice().sort((a,b)=>timeToMin(a.start)-timeToMin(b.start));
+const nowMin=new Date().getHours()*60+new Date().getMinutes();
+const submit=e=>{
+e.preventDefault();
+if(timeToMin(end)<=timeToMin(start)){alert('⚠️ End time must be after start time');return;}
+const block={id:editing||uid(),start,end,label:label.trim()||BTLabel[btype],type:btype};
+const arr=(state.timetable[day]||[]).filter(b=>b.id!==editing);
+update({timetable:{...state.timetable,[day]:[...arr,block]}});
+setEditing(null);setLabel('');
+};
+return(
+<div className="space-y-5">
+<div><h1 className="text-2xl font-extrabold">📅 Weekly Timetable</h1>
+<p className="text-sm text-slate-400">Your classes & study blocks. Today's schedule shows up on the dashboard automatically.</p></div>
+
+<div className="flex gap-2 flex-wrap">
+{DAYS.map((d,i)=>(
+<button key={d} onClick={()=>{setDay(i);setEditing(null);}}
+className={"px-4 py-2 rounded-xl text-sm font-semibold transition-all relative "+
+(day===i?'bg-indigo-600 text-white':'bg-slate-900 border border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-600')}>
+{d}{i===todayIdx()&&<span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full"/>}
+{(state.timetable[i]||[]).length>0&&<span className="ml-1.5 text-[10px] opacity-70">{(state.timetable[i]||[]).length}</span>}
+</button>
+))}
+</div>
+
+<div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+<Card cls="lg:col-span-3">
+<p className={labelCls}>{DAYS[day]} blocks</p>
+{blocks.length===0?(
+<p className="text-sm text-slate-500 py-8 text-center">No blocks yet for {DAYS[day]}.<br/>Add one with the form →</p>
+):(
+<div className="space-y-2 mt-2">
+{blocks.map(b=>{
+const isNow=day===todayIdx()&&timeToMin(b.start)<=nowMin&&nowMin<timeToMin(b.end);
+return(
+<div key={b.id} className={"flex items-center gap-3 px-3 py-3 rounded-xl border group "+
+(isNow?'border-indigo-500/60 bg-indigo-500/10':'border-slate-800 bg-slate-800/40')}>
+<div className="text-xs text-slate-400 w-28 shrink-0 font-mono">{fmtTime(b.start,fmt)}<br/>{fmtTime(b.end,fmt)}</div>
+<div className="flex-1 min-w-0">
+<p className="text-sm font-semibold truncate">{b.label}</p>
+<p className="text-[11px] text-slate-500">{fmtMins(timeToMin(b.end)-timeToMin(b.start))}</p>
+</div>
+{isNow?<Badge cls="bg-indigo-500 text-white border-indigo-400 animate-pulse">NOW</Badge>
+:<Badge cls={BT[b.type]}>{BTLabel[b.type]}</Badge>}
+<div className="flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<button onClick={()=>{setEditing(b.id);setStart(b.start);setEnd(b.end);setLabel(b.label);setBtype(b.type);}}
+className="text-xs text-slate-400 hover:text-indigo-400">✏️</button>
+<button onClick={()=>update({timetable:{...state.timetable,[day]:(state.timetable[day]||[]).filter(x=>x.id!==b.id)}})}
+className="text-xs text-slate-400 hover:text-red-400">🗑</button>
+</div>
+</div>);
+})}
+</div>
+)}
+</Card>
+
+<Card cls="lg:col-span-2 h-fit">
+<p className={labelCls}>{editing?'✏️ Edit block':'➕ Add block'}</p>
+<form onSubmit={submit} className="space-y-3 mt-2">
+<div className="grid grid-cols-2 gap-3">
+<div><label className={labelCls}>Start</label>
+<input type="time" className={inputCls} value={start} onChange={e=>setStart(e.target.value)}/></div>
+<div><label className={labelCls}>End</label>
+<input type="time" className={inputCls} value={end} onChange={e=>setEnd(e.target.value)}/></div>
+</div>
+<div><label className={labelCls}>Label</label>
+<input className={inputCls} value={label} onChange={e=>setLabel(e.target.value)} placeholder="e.g. Physics lecture / Revision"/></div>
+<div><label className={labelCls}>Type</label>
+<div className="grid grid-cols-2 gap-2">
+{Object.keys(BTLabel).map(t=>(
+<button type="button" key={t} onClick={()=>setBtype(t)}
+className={"py-2 rounded-xl border text-xs font-semibold transition-all "+(btype===t?BT[t]+' ring-1 ring-white/20':'border-slate-700 text-slate-400 hover:border-slate-500')}>
+{BTLabel[t]}
+</button>
+))}
+</div></div>
+<div className="flex gap-2 pt-1">
+<Btn type="submit" cls="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white">{editing?'Update block':'Add block'}</Btn>
+{editing&&<Btn type="button" onClick={()=>{setEditing(null);setLabel('');}} cls="bg-slate-800 hover:bg-slate-700 text-slate-300">Cancel</Btn>}
+</div>
+</form>
+</Card>
+</div>
+</div>);
+}
+
+/* ================= SUBJECTS ================= */
+function SubjectsView({state,update,addSession,toast}){
+const [modal,setModal]=useState(null); // null | 'new' | subject
+const saveSubject=subj=>{
+update(s=>{
+const exists=s.subjects.some(x=>x.id===subj.id);
+return{...s,subjects:exists?s.subjects.map(x=>x.id===subj.id?subj:x):[...s.subjects,subj]};
+});
+setModal(null);
+toast(modal&&modal!=='new'?'💾 Saved!':'✅ Subject added!');
+};
+const delSubject=id=>update(s=>({...s,
+subjects:s.subjects.filter(x=>x.id!==id),
+sessions:s.sessions.filter(x=>x.subjectId!==id)}));
+return(
+<div className="space-y-5">
+<div className="flex flex-wrap items-center justify-between gap-3">
+<div><h1 className="text-2xl font-extrabold">📚 Subjects</h1>
+<p className="text-sm text-slate-400">Each subject can use a different progress style — totally up to you.</p></div>
+<Btn onClick={()=>setModal('new')}>➕ Add subject</Btn>
+</div>
+{state.subjects.length===0?(
+<div className="text-center py-16 border-2 border-dashed border-slate-800 rounded-2xl">
+<p className="text-4xl mb-3">📚</p>
+<p className="text-slate-300 font-semibold">No subjects yet</p>
+<p className="text-slate-500 text-sm mt-1 mb-4">Add your mid-term subjects and pick how you want to track each one.</p>
+<Btn onClick={()=>setModal('new')}>➕ Add your first subject</Btn>
+</div>
+):(
+<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+{state.subjects.map(s=>(
+<SubjectCard key={s.id} s={s} sessions={state.sessions}
+updateSubject={(id,patch)=>update(st=>({...st,subjects:st.subjects.map(x=>x.id===id?{...x,...patch}:x)}))}
+delSubject={delSubject} onEdit={()=>setModal(s)}
+addSession={addSession} toast={toast}/>
+))}
+</div>
+)}
+{modal&&<SubjectModal initial={modal==='new'?null:modal} onSave={saveSubject}
+onClose={()=>setModal(null)} toast={toast}/>}
+</div>);
+}
+
+/* ================= TIMER ================= /
+function TimerView({state,timer,setTimer,addSession,toast}){
+const {subjects,sessions}=state;
+const st=state.settings;
+const {mode,running,phase,secondsLeft,secondsElapsed,subjectId}=timer;
+const sel=subjects.find(s=>s.id===subjectId);
+const display=mode==='stopwatch'?secondsElapsed:secondsLeft;
+const startPause=()=>{
+if(!subjectId){toast('Pick a subject first 🎯');return;}
+setTimer(t=>({...t,running:!t.running}));
+};
+const stop=()=>{
+if(mode==='stopwatch'){
+if(secondsElapsed>=60){
+addSession(subjectId,Math.max(1,Math.round(secondsElapsed/60)));
+toast('✅ Logged '+fmtMins(Math.round(secondsElapsed/60))+' of '+(sel?sel.name:'')+'!');
+}else toast('Too short to log (min 1 minute)');
+setTimer(t=>({...t,running:false,secondsElapsed:0}));
+}else setTimer(t=>({...t,running:false,phase:'focus',secondsLeft:st.focusMin60}));
+};
+const switchMode=m=>setTimer(t=>({...t,mode:m,running:false,phase:'focus',secondsLeft:st.focusMin*60,secondsElapsed:0}));
+const [qm,setQm]=useState('');const [qd,setQd]=useState(todayStr());
+const recent=sessions.slice().sort((a,b)=>b.ts-a.ts).slice(0,6);
+const phaseColor=phase==='focus'?'text-indigo-400':'text-emerald-400';
+return(
+<div className="space-y-5">
+<div><h1 className="text-2xl font-extrabold">⏱️ Study Timer</h1>
+<p className="text-sm text-slate-400">Pomodoro auto-logs each focus round. Stopwatch logs when you stop it.</p></div>
+
+<div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+<Card cls="lg:col-span-2 text-center py-8">
+<div className="flex justify-center gap-2 mb-6">
+<button onClick={()=>switchMode('pomodoro')}
+className={"px-5 py-2 rounded-xl text-sm font-semibold transition-all "+(mode==='pomodoro'?'bg-indigo-600 text-white':'bg-slate-800 text-slate-400 hover:text-slate-200')}>🍅 Pomodoro</button>
+<button onClick={()=>switchMode('stopwatch')}
+className={"px-5 py-2 rounded-xl text-sm font-semibold transition-all "+(mode==='stopwatch'?'bg-indigo-600 text-white':'bg-slate-800 text-slate-400 hover:text-slate-200')}>⏲️ Stopwatch</button>
+</div>
+{mode==='pomodoro'&&<p className={"text-sm font-bold uppercase tracking-widest mb-2 "+phaseColor}>
+{phase==='focus'?'🎯 FOCUS':'☕ BREAK'}</p>}
+<p className={"text-7xl sm:text-8xl font-extrabold font-mono tabular-nums "+(running?'':'text-slate-400')}>
+{fmtSecs(display)}
+</p>
+<select value={subjectId||''} onChange={e=>setTimer(t=>({...t,subjectId:e.target.value||null}))}
+className={inputCls+' max-w-xs mx-auto mt-6'}>
+<option value="">— Select subject —</option>
+{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+</select>
+<div className="flex justify-center gap-3 mt-6">
+<Btn onClick={startPause} cls={"px-8 py-3 text-base "+(running?'bg-amber-600 hover:bg-amber-500':'bg-emerald-600 hover:bg-emerald-500')+' text-white font-bold'}>
+{running?'⏸ Pause':'▶ Start'}
+</Btn>
+<Btn onClick={stop} cls="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold">⏹ {mode==='stopwatch'?'Stop & Log':'Stop'}</Btn>
+<Btn onClick={()=>setTimer(t=>({...t,running:false,phase:'focus',secondsLeft:st.focusMin*60,secondsElapsed:0}))}
+cls="px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-400 font-bold">↺ Reset</Btn>
+</div>
+{mode==='pomodoro'&&<p className="text-xs text-slate-500 mt-4">Focus {st.focusMin}m · Break {st.breakMin}m (change in ⚙️ Settings)</p>}
+</Card>
+
+<div className="space-y-4">
+<Card>
+<p className={labelCls}>Quick log (manual)</p>
+<select value={subjectId||''} onChange={e=>setTimer(t=>({...t,subjectId:e.target.value||null}))} className={inputCls+' mb-2'}>
+<option value="">— Subject —</option>
+{subjects.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}
+</select>
+<div className="flex gap-2">
+<input type="date" className={inputCls} value={qd} onChange={e=>setQd(e.target.value)}/>
+<input type="number" min="1" placeholder="mins" className={inputCls+' w-24'} value={qm} onChange={e=>setQm(e.target.value)}/>
+</div>
+<Btn onClick={()=>{
+if(!subjectId){toast('Pick a subject first 🎯');return;}
+const m=parseInt(qm);if(!m||m<=0){toast('Enter minutes ⏱️');return;}
+addSession(subjectId,m,qd);setQm('');toast('✅ Logged '+fmtMins(m)+'!');
+}} cls="w-full mt-3 bg-emerald-600 hover:bg-emerald-500 text-white">Log session</Btn>
+</Card>
+<Card>
+<p className={labelCls}>Recent sessions</p>
+{recent.length===0?<p className="text-sm text-slate-500">No sessions yet — hit start! 🚀</p>:(
+<div className="space-y-2">
+{recent.map(s=>{
+const sub=subjects.find(x=>x.id===s.subjectId);
+return(
+<div key={s.id} className="flex items-center gap-2 text-sm">
+<span className="w-2 h-2 rounded-full shrink-0" style={{background:sub?sub.color:'#475569'}}></span>
+<span className="flex-1 truncate">{sub?sub.name:'Deleted subject'}</span>
+<span className="text-slate-500 text-xs">{s.date===todayStr()?'Today':s.date.slice(5)}</span>
+<span className="font-semibold text-slate-300">{fmtMins(s.minutes)}</span>
+</div>);
+})}
+</div>
+)}
+</Card>
+</div>
+</div>
+</div>);
+}
+
+/* ================= SETTINGS ================= */
+function SettingsView({state,updateSettings,setState,toast}){
+const s=state.settings;
+const [name,setName]=useState(s.name);
+const [examName,setExamName]=useState(s.examName);
+const [examDate,setExamDate]=useState(s.examDate);
+const [focusMin,setFocusMin]=useState(s.focusMin);
+const [breakMin,setBreakMin]=useState(s.breakMin);
+const doExport=()=>{
+const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+a.download='midterm-hq-backup.json';a.click();URL.revokeObjectURL(a.href);
+toast('📦 Backup downloaded!');
+};
+const doImport=e=>{
+const f=e.target.files[0];if(!f)return;
+const r=new FileReader();
+r.onload=()=>{try{
+const d=JSON.parse(r.result);
+if(!d.settings||!Array.isArray(d.subjects))throw 0;
+setState({...defaultState(),...d});toast('✅ Backup imported!');
+}catch(err){toast('⚠️ Invalid backup file');}};
+r.readAsText(f);e.target.value='';
+};
+const doReset=()=>{
+if(confirm('Erase ALL data? This cannot be undone.')&&confirm('Last chance — really delete everything?')){
+localStorage.removeItem(LS_KEY);setState(defaultState());toast('🌱 Fresh start!');
+}
+};
+return(
+<div className="space-y-5 max-w-2xl">
+<div><h1 className="text-2xl font-extrabold">⚙️ Settings</h1>
+<p className="text-sm text-slate-400">Time formats, exam countdown and data backups.</p></div>
+
+<Card>
+<p className={labelCls}>Profile & exam</p>
+<div className="space-y-3 mt-1">
+<div><label className={labelCls}>Your name</label>
+<input className={inputCls} value={name} onChange={e=>setName(e.target.value)} placeholder="What should I call you?"/></div>
+<div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+<div><label className={labelCls}>Exam name</label>
+<input className={inputCls} value={examName} onChange={e=>setExamName(e.target.value)}/></div>
+<div><label className={labelCls}>Exam start date</label>
+<input type="date" className={inputCls} value={examDate} onChange={e=>setExamDate(e.target.value)}/></div>
+</div>
+</div>
+</Card>
+
+<Card>
+<p className={labelCls}>Time format</p>
+<div className="flex gap-2 mt-1">
+{[['12','12-hour (2:30 PM)'],['24','24-hour (14:30)']].map(([v,l])=>(
+<button key={v} onClick={()=>{updateSettings({timeFormat:v});toast('🕐 Switched to '+l);}}
+className={"px-4 py-2 rounded-xl text-sm font-semibold transition-all "+
+(s.timeFormat===v?'bg-indigo-600 text-white':'bg-slate-800 text-slate-400 hover:text-slate-200')}>{l}</button>
+))}
+</div>
+</Card>
+
+<Card>
+<p className={labelCls}>Pomodoro durations (minutes)</p>
+<div className="grid grid-cols-2 gap-3 mt-1">
+<div><label className={labelCls}>Focus</label>
+<input type="number" min="5" max="120" className={inputCls} value={focusMin} onChange={e=>setFocusMin(e.target.value)}/></div>
+<div><label className={labelCls}>Break</label>
+<input type="number" min="1" max="60" className={inputCls} value={breakMin} onChange={e=>setBreakMin(e.target.value)}/></div>
+</div>
+</Card>
+
+<Btn onClick={()=>{
+updateSettings({name:name.trim(),examName:examName.trim(),examDate,focusMin:Math.max(5,+focusMin||25),breakMin:Math.max(1,+breakMin||5)});
+toast('💾 Settings saved!');
+}} cls="bg-indigo-600 hover:bg-indigo-500 text-white px-6">Save settings</Btn>
+
+<Card>
+<p className={labelCls}>Data</p>
+<p className="text-xs text-slate-500 mb-3">Everything is stored in your browser. Download a backup to keep it safe or move devices.</p>
+<div className="flex flex-wrap gap-2">
+<Btn onClick={doExport} cls="bg-slate-800 hover:bg-slate-700 text-slate-200">📦 Export backup</Btn>
+<label className="px-4 py-2 rounded-xl font-medium text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer">
+📥 Import backup<input type="file" accept=".json" className="hidden" onChange={doImport}/>
+</label>
+<Btn onClick={doReset} cls="bg-red-900/60 hover:bg-red-900 text-red-300">🗑 Reset everything</Btn>
+</div>
+</Card>
+</div>);
+}
+
+/* ================= APP ================= */
+function App(){
+const [state,setState]=useState(()=>loadState()||defaultState());
+const [view,setView]=useState('dashboard');
+const [toastMsg,setToastMsg]=useState(null);
+const toastRef=useRef(null);
+const toast=msg=>{setToastMsg(msg);clearTimeout(toastRef.current);toastRef.current=setTimeout(()=>setToastMsg(null),2800);};
+const stateRef=useRef(state);stateRef.current=state;
+
+useEffect(()=>{try{localStorage.setItem(LS_KEY,JSON.stringify(state));}catch(e){}},[state]);
+
+// register global session-adder with custom date (used by subject card quick log)
+addSessionTo=(subjectId,minutes,date)=>{
+setState(s=>({...s,sessions:[...s.sessions,{id:uid(),subjectId,date:date||todayStr(),minutes,ts:Date.now()}]}));
+};
+const addSession=(subjectId,minutes,date)=>{
+if(addSessionTo)addSessionTo(subjectId,minutes,date);
+};
+
+const [timer,setTimer]=useState({mode:'pomodoro',running:false,phase:'focus',secondsLeft:2560,secondsElapsed:0,subjectId:null});
+useEffect(()=>{
+if(!timer.running)return;
+const iv=setInterval(()=>{
+setTimer(t=>{
+if(t.mode==='stopwatch')return{...t,secondsElapsed:t.secondsElapsed+1};
+const left=t.secondsLeft-1;
+if(left>0)return{...t,secondsLeft:left};
+const st=stateRef.current.settings;
+if(t.phase==='focus'){
+addSession(t.subjectId,st.focusMin);
+toast('✅ Focus session logged — take a break! ☕');
+return{...t,phase:'break',secondsLeft:st.breakMin60};
+}
+toast('🔔 Break over — back to focus! 💪');
+return{...t,phase:'focus',secondsLeft:st.focusMin*60};
+});
+},1000);
+return()=>clearInterval(iv);
+},[timer.running]);
+
+const update=patch=>setState(s=>({...s,...patch}));
+const updateSettings=patch=>setState(s=>({...s,settings:{...s.settings,...patch}}));
+
+const NAV=[
+{id:'dashboard',icon:'📊',label:'Dashboard'},
+{id:'timetable',icon:'📅',label:'Timetable'},
+{id:'subjects',icon:'📚',label:'Subjects'},
+{id:'timer',icon:'⏱️',label:'Timer'},
+{id:'settings',icon:'⚙️',label:'Settings'},
+];
+return(
+<div className="min-h-screen flex flex-col md:flex-row">
+<aside className="md:w-56 md:min-h-screen border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900/50 md:sticky md:top-0 md:h-screen flex md:flex-col">
+<div className="hidden md:block px-5 pt-6 pb-4">
+<h1 className="text-xl font-extrabold tracking-tight">🎯 MidTerm<span className="text-indigo-400">HQ</span></h1>
+<p className="text-[11px] text-slate-500 mt-0.5">crush those mid-terms</p>
+</div>
+<nav className="flex md:flex-col md:mt-2 overflow-x-auto md:overflow-visible w-full">
+{NAV.map(n=>(
+<button key={n.id} onClick={()=>setView(n.id)}
+className={"flex items-center gap-3 px-5 py-3 md:py-2.5 text-sm font-semibold whitespace-nowrap transition-all relative "+
+(view===n.id?'text-indigo-300 bg-indigo-500/10 md:border-r-2 border-indigo-500':'text-slate-400 hover:text-slate-200')}>
+<span>{n.icon}</span><span className="hidden sm:inline">{n.label}</span>
+{n.id==='timer'&&timer.running&&<span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>}
+</button>
+))}
+</nav>
+<div className="hidden md:block mt-auto p-5">
+<div className="text-[11px] text-slate-600 leading-relaxed">
+💾 Auto-saves in your browser.<br/>Export backups from Settings.
+</div>
+</div>
+</aside>
+
+<main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto">
+{view==='dashboard'&&<Dashboard state={state} go={setView} openAdd={()=>setView('subjects')}/>}
+{view==='timetable'&&<TimetableView state={state} update={update}/>}
+{view==='subjects'&&<SubjectsView state={state} update={update} addSession={addSession} toast={toast}/>}
+{view==='timer'&&<TimerView state={state} timer={timer} setTimer={setTimer} addSession={addSession} toast={toast}/>}
+{view==='settings'&&<SettingsView state={state} updateSettings={updateSettings} setState={setState} toast={toast}/>}
+</main>
+
+{toastMsg&&(
+<div className="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 border border-slate-600 text-slate-100 text-sm px-5 py-3 rounded-xl shadow-2xl z-50 animate-pulse">
+{toastMsg}
+</div>
+)}
+</div>);
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+
+</body>
+</html>
+</artifact>
