@@ -1,15 +1,30 @@
 const Listing = require('../models/Listing');
+const cloudinary = require('../config/cloudinary')
+
 
 const createListing = async (req, res) => {
   try {
-    const { title, description, category, price, image } = req.body;
+    const { title, description, category, price } = req.body;
+
+    let imageUrl;
+
+    if (req.file) {
+      const base64 = req.file.buffer.toString('base64');
+      const dataUri = `data:${req.file.mimetype};base64,${base64}`;
+
+      const result = await cloudinary.uploader.upload(dataUri, {
+        folder: 'campus-marketplace'
+      });
+
+      imageUrl = result.secure_url;
+    }
 
     const listing = await Listing.create({
       title,
       description,
       category,
       price,
-      image,
+      image: imageUrl,
       postedBy: req.user._id,
     });
 
@@ -22,7 +37,15 @@ const createListing = async (req, res) => {
 
 const getListings = async (req, res) => {
   try {
-    const listings = await Listing.find({ status: 'active' })
+    const { category, search } = req.query;
+
+    const filter = { status: 'acive' };
+
+    if (category) {
+      filter.title = { $regex: search, $options: "i" };
+    }
+
+    const listings = await Listing.find(filter)
       .populate('postedBy', 'name email')
       .sort({ createdAt: -1 });
 
