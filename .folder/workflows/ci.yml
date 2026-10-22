@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+
+jobs:
+  check-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/chekout@v4
+      - uses: actions/setup-node@v4
+        with:
+          noder-version: 22
+          cahce: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: find src server.js -name "*.js" -exec node --check {} \;
+
+      
