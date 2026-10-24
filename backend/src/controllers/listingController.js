@@ -39,10 +39,14 @@ const getListings = async (req, res) => {
   try {
     const { category, search } = req.query;
 
-    const filter = { status: 'acive' };
+    const filter = { status: 'active' };
 
     if (category) {
-      filter.title = { $regex: search, $options: "i" };
+      filter.category = category;
+    }
+
+    if (search) {
+      filter.title = { $regex: search, $options: 'i' };
     }
 
     const listings = await Listing.find(filter)
