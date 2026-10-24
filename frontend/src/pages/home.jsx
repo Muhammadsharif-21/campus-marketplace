@@ -35,13 +35,14 @@ function Home() {
       <h2>Listings</h2>
 
       <input
+        className="search"
         type="text"
         placeholder="Search by title..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      <div>
+      <div className="filters">
         {CATEGORIES.map((c) => (
           <button key={c} onClick={() => setCategory(c)} disabled={category === c}>
             {c}
@@ -53,16 +54,24 @@ function Home() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {!loading && !error && listings.length === 0 && <p>No listings found.</p>}
 
-      {listings.map((item) => (
-        <div key={item._id}>
-          {item.image && <img src={item.image} alt={item.title} width="200" />}
-          <h3>{item.title}</h3>
-          <p>{item.description}</p>
-          <p>Category: {item.category}</p>
-          {item.category === 'for-sale' && <p>Price: {item.price}</p>}
-          <p>Posted by {item.postedBy?.name}</p>
-        </div>
-      ))}
+      <div className="grid">
+        {listings.map((item) => (
+          <div key={item._id} className="card">
+            {item.image ? (
+              <img src={item.image} alt={item.title} />
+            ) : (
+              <div className="no-image">No image</div>
+            )}
+            <div className="card-body">
+              <span className={`badge badge-${item.category}`}>{item.category}</span>
+              <h3 className="card-title">{item.title}</h3>
+              {item.category === 'for-sale' && <p className="price">Rs {item.price}</p>}
+              <p className="card-desc">{item.description}</p>
+              <p className="card-meta">Posted by {item.postedBy?.name}</p>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

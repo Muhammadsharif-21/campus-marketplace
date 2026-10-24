@@ -46,18 +46,35 @@ function MyListings() {
       {error && <p style={{ color: 'red' }}>{error}</p>}
       {listings.length === 0 && !error && <p>You haven't posted anything yet.</p>}
 
-      {listings.map((item) => (
-        <div key={item._id}>
-          {item.image && <img src={item.image} alt={item.title} width="150" />}
-          <h3>{item.title}</h3>
-          <p>Category: {item.category}</p>
-          <p>Status: {item.status}</p>
-          {item.status === 'active' && (
-            <button onClick={() => handleResolve(item._id)}>Mark resolved</button>
-          )}
-          <button onClick={() => handleDelete(item._id)}>Delete</button>
-        </div>
-      ))}
+      <div className="grid">
+        {listings.map((item) => (
+          <div key={item._id} className="card">
+            {item.image ? (
+              <img src={item.image} alt={item.title} />
+            ) : (
+              <div className="no-image">No image</div>
+            )}
+            <div className="card-body">
+              <div>
+                <span className={`badge badge-${item.category}`}>{item.category}</span>{' '}
+                <span className={`badge badge-${item.status}`}>{item.status}</span>
+              </div>
+              <h3 className="card-title">{item.title}</h3>
+              {item.category === 'for-sale' && <p className="price">Rs {item.price}</p>}
+              <div className="actions">
+                {item.status === 'active' && (
+                  <button className="btn-success" onClick={() => handleResolve(item._id)}>
+                    Mark resolved
+                  </button>
+                )}
+                <button className="btn-danger" onClick={() => handleDelete(item._id)}>
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
