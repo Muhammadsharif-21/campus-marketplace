@@ -60,4 +60,64 @@ const getListings = async (req, res) => {
   }
 };
 
-module.exports = { createListing, getListings };
+const getMyListings = async (req, res) => {
+  try {
+    const listings = await Listing.find({ postedBy: req.user._id })
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(listings);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const updateListing = async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+
+    if (!listing) {
+      return res.status(404).json({ message: 'Listing not found' });
+    }
+
+    if (listing.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not allowed to edit this listing' });
+    }
+
+    const { title, description, category, price, image, status } = req.body;
+
+    const updated = await Listing.findByIdAndUpdate(
+      req.params.id,
+      { title, description, category, price, image, status },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const deleteListing = async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id);
+
+    if (!listing) {
+      return res.status(404).json({ message: 'Listing not found' });
+    }
+
+    if (listing.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not allowed to delete this listing' });
+    }
+
+    await listing.deleteOne();
+
+    res.status(200).json({ message: 'Listing deleted' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+ 
+module.exports = { createListing, getListings, getMyListings, updateListing, deleteListing };
