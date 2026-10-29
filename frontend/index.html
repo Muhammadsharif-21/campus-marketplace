@@ -2,11 +2,31 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <title>Campus Marketplace | Buy, Sell, and Trade on Campus</title>
+    <meta name="description" content="The trusted campus marketplace for students to buy, sell, trade, and exchange textbooks, electronics, furniture, and more safely." />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23C85A32'><path d='M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z'/></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              terracotta: '#C85A32',
+              'amber-brand': '#E0A96D',
+              surface: '#FAF7F2',
+              primary: '#2C221E',
+            }
+          }
+        }
+      }
+    </script>
   </head>
-  <body>
+  <body class="bg-[#FAF7F2] text-[#2C221E] antialiased min-h-screen flex flex-col font-['Plus_Jakarta_Sans',sans-serif]">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

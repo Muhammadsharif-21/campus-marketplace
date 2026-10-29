@@ -8,6 +8,7 @@ import Home from './pages/home';
 import PostItem from './pages/PostItems';
 import MyListings from './pages/MyListings';
 import Favorites from './pages/Favorites';
+import NotFound from './pages/NotFound';
 import api from './api/axios';
 
 function App() {
@@ -63,6 +64,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
