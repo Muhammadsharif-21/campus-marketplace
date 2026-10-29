@@ -1,18 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix default leaflet marker icon path issue in Vite
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-
-let DefaultIcon = L.icon({
-  iconUrl: icon,
-  shadowUrl: iconShadow,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
-L.Marker.prototype.options.icon = DefaultIcon;
 
 const COMMON_SPOTS = [
   { name: 'Library Entrance', lat: 37.7749, lng: -122.4194 },
@@ -39,43 +25,72 @@ function CampusMap({
   const [gpsStatus, setGpsStatus] = useState('');
 
   useEffect(() => {
-    if (!mapContainerRef.current) return;
+    let isMounted = true;
 
-    if (!mapInstanceRef.current) {
-      const map = L.map(mapContainerRef.current).setView([lat, lng], 15);
+    const loadLeafletAndInit = async () => {
+      // Ensure Leaflet CSS is loaded in document head
+      if (!document.getElementById('leaflet-css')) {
+        const link = document.createElement('link');
+        link.id = 'leaflet-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-      }).addTo(map);
-
-      const marker = L.marker([lat, lng], { draggable: isEditable }).addTo(map);
-      markerRef.current = marker;
-
-      if (isEditable) {
-        marker.on('dragend', () => {
-          const position = marker.getLatLng();
-          setLat(position.lat);
-          setLng(position.lng);
-          if (onLocationSelect) {
-            onLocationSelect({ spotName, lat: position.lat, lng: position.lng });
-          }
-        });
-
-        map.on('click', (e) => {
-          const { lat: clickLat, lng: clickLng } = e.latlng;
-          marker.setLatLng([clickLat, clickLng]);
-          setLat(clickLat);
-          setLng(clickLng);
-          if (onLocationSelect) {
-            onLocationSelect({ spotName, lat: clickLat, lng: clickLng });
-          }
+      // Ensure Leaflet JS is loaded
+      if (!window.L) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
         });
       }
 
-      mapInstanceRef.current = map;
-    }
+      if (!isMounted || !mapContainerRef.current || !window.L) return;
+
+      const L = window.L;
+
+      if (!mapInstanceRef.current) {
+        const map = L.map(mapContainerRef.current).setView([lat, lng], 15);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+        }).addTo(map);
+
+        const marker = L.marker([lat, lng], { draggable: isEditable }).addTo(map);
+        markerRef.current = marker;
+
+        if (isEditable) {
+          marker.on('dragend', () => {
+            const position = marker.getLatLng();
+            setLat(position.lat);
+            setLng(position.lng);
+            if (onLocationSelect) {
+              onLocationSelect({ spotName, lat: position.lat, lng: position.lng });
+            }
+          });
+
+          map.on('click', (e) => {
+            const { lat: clickLat, lng: clickLng } = e.latlng;
+            marker.setLatLng([clickLat, clickLng]);
+            setLat(clickLat);
+            setLng(clickLng);
+            if (onLocationSelect) {
+              onLocationSelect({ spotName, lat: clickLat, lng: clickLng });
+            }
+          });
+        }
+
+        mapInstanceRef.current = map;
+      }
+    };
+
+    loadLeafletAndInit().catch((err) => console.error('Map loading error:', err));
 
     return () => {
+      isMounted = false;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
