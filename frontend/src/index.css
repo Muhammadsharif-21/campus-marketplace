@@ -118,17 +118,55 @@ button:disabled {
   cursor: not-allowed;
 }
 
-/* Search and Filters */
+/* Search and Filter Panel */
+.filter-panel {
+  background-color: #ffffff;
+  padding: 18px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
 .search {
   width: 100%;
-  margin: 4px 0 16px;
+  margin-bottom: 14px;
   border: 1px solid #cbd5e1;
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.price-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.price-inputs input {
+  width: 85px;
+  padding: 8px 10px;
 }
 
 .filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
 }
 
 .filters button {
@@ -137,8 +175,8 @@ button:disabled {
   border: 1px solid var(--border-color);
   font-weight: 500;
   border-radius: 999px;
-  padding: 6px 16px;
-  font-size: 0.85rem;
+  padding: 5px 14px;
+  font-size: 0.82rem;
 }
 
 .filters button:hover {
@@ -156,9 +194,9 @@ button:disabled {
 /* Card Grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 22px;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .card {
@@ -177,19 +215,50 @@ button:disabled {
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
 }
 
+.card-image-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+}
+
 .card img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
+  height: 100%;
   object-fit: cover;
   background-color: #f1f5f9;
+}
+
+.fav-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 999px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.fav-btn:hover {
+  transform: scale(1.1);
+  background: #ffffff;
 }
 
 .no-image {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 4 / 3;
+  width: 100%;
+  height: 100%;
   background-color: #f1f5f9;
   color: #94a3b8;
   font-size: 0.85rem;
@@ -233,6 +302,18 @@ button:disabled {
   color: #94a3b8;
 }
 
+.seller-star-badge {
+  color: #f59e0b;
+  font-weight: 600;
+}
+
+.location-meta {
+  font-size: 0.8rem;
+  color: #0284c7;
+  margin: 0;
+  font-weight: 500;
+}
+
 .badge {
   align-self: flex-start;
   padding: 3px 10px;
@@ -240,6 +321,15 @@ button:disabled {
   font-size: 0.75rem;
   font-weight: 600;
   text-transform: capitalize;
+}
+
+.badge-condition {
+  font-size: 0.72rem;
+  font-weight: 600;
+  background-color: #f1f5f9;
+  color: #475569;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
 .badge-for-sale { background: #dbeafe; color: #1e40af; }
@@ -299,6 +389,17 @@ button:disabled {
   border-color: #db2777;
 }
 
+.btn-offer {
+  background-color: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+}
+.btn-offer:hover {
+  background-color: #dcfce7;
+}
+
 .btn-chat {
   background-color: #eff6ff;
   color: #2563eb;
@@ -315,6 +416,36 @@ button:disabled {
   color: #db2777;
   font-weight: 600;
   margin: 2px 0;
+}
+
+/* Offers Banner in Chat */
+.offers-banner {
+  background-color: #fefce8;
+  border: 1px solid #fef08a;
+  padding: 12px;
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+.offers-title {
+  margin: 0 0 6px 0;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #854d0e;
+}
+.offer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+.offer-actions {
+  display: flex;
+  gap: 6px;
+}
+.offer-actions button {
+  padding: 4px 10px;
+  font-size: 0.78rem;
 }
 
 /* Navbar Notification Badge */
@@ -362,11 +493,12 @@ button:disabled {
   border-radius: var(--radius);
   padding: 24px;
   width: 100%;
-  max-width: 500px;
+  max-width: 520px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
-  max-height: 85vh;
+  max-height: 88vh;
+  overflow-y: auto;
 }
 
 .modal-header {
@@ -422,7 +554,7 @@ button:disabled {
 
 /* Chat UI Modal */
 .chat-modal {
-  height: 520px;
+  height: 540px;
 }
 
 .chat-messages {
@@ -487,6 +619,52 @@ button:disabled {
 }
 .chat-form input {
   flex: 1;
+}
+
+/* Campus Map Styling */
+.campus-map-wrapper {
+  background-color: #f8fafc;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+}
+.btn-gps {
+  background-color: #0284c7;
+  font-size: 0.82rem;
+  padding: 6px 12px;
+}
+.btn-gps:hover {
+  background-color: #0369a1;
+}
+.spot-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.spot-chip {
+  background-color: #ffffff;
+  color: #475569;
+  border: 1px solid var(--border-color);
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.spot-chip.active {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+.gps-status {
+  font-size: 0.78rem;
+  color: #0284c7;
+  margin: 4px 0 0 0;
+  font-weight: 500;
+}
+.map-coords-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin: 6px 0 0 0;
 }
 
 /* Notifications List */

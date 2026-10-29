@@ -44,6 +44,7 @@ function Navbar() {
           <>
             <Link to="/post">Post item</Link>
             <Link to="/my-listings">My listings</Link>
+            <Link to="/favorites">❤️ Favorites</Link>
             <button
               className="notif-nav-btn"
               onClick={() => setShowNotifications(!showNotifications)}

@@ -6,6 +6,7 @@ const authRoutes = require('./src/routes/authRoutes');
 const listingRoutes = require('./src/routes/listingRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
+const userRoutes = require('./src/routes/userRoutes');
 
 const app = express();
 
@@ -16,6 +17,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/users', userRoutes);
 
 //Basic test route
 app.get('/', (req, res) => {

@@ -3,14 +3,17 @@ import api from '../api/axios';
 
 function ChatModal({ listing, currentUser, onClose }) {
   const [messages, setMessages] = useState([]);
+  const [currentListing, setCurrentListing] = useState(listing);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef(null);
 
+  const isSeller = (currentListing.postedBy?._id || currentListing.postedBy) === currentUser?.id;
+
   const fetchMessages = async () => {
     try {
-      const res = await api.get(`/messages/${listing._id}`);
+      const res = await api.get(`/messages/${currentListing._id}`);
       setMessages(res.data);
     } catch (err) {
       console.error('Failed to load messages', err);
@@ -23,28 +26,37 @@ function ChatModal({ listing, currentUser, onClose }) {
     fetchMessages();
     const interval = setInterval(fetchMessages, 3000);
     return () => clearInterval(interval);
-  }, [listing._id]);
+  }, [currentListing._id]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleRespondOffer = async (offerId, status) => {
+    try {
+      setError('');
+      const res = await api.post(`/listings/${currentListing._id}/respond-offer`, { offerId, status });
+      setCurrentListing(res.data.listing);
+      fetchMessages();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update offer');
+    }
+  };
 
   const handleSend = async (e) => {
     e.preventDefault();
     if (!text.trim()) return;
     try {
       setError('');
-      // Determine receiver: if user is seller, specify receiver from latest buyer message or listing author
       let receiverId = undefined;
-      if (listing.postedBy?._id === currentUser?.id || listing.postedBy === currentUser?.id) {
-        // Find last message from other user to respond to
+      if (isSeller) {
         const otherMsg = messages.find(m => (m.sender?._id || m.sender) !== currentUser?.id);
         if (otherMsg) {
           receiverId = otherMsg.sender?._id || otherMsg.sender;
         }
       }
 
-      await api.post(`/messages/${listing._id}`, { text, receiverId });
+      await api.post(`/messages/${currentListing._id}`, { text, receiverId });
       setText('');
       fetchMessages();
     } catch (err) {
@@ -52,13 +64,30 @@ function ChatModal({ listing, currentUser, onClose }) {
     }
   };
 
+  const pendingOffers = currentListing.offers?.filter(o => o.status === 'pending') || [];
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content chat-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h3>Chat about "{listing.title}"</h3>
+          <h3>Chat about "{currentListing.title}"</h3>
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
+
+        {isSeller && pendingOffers.length > 0 && (
+          <div className="offers-banner">
+            <p className="offers-title">Pending Buyer Offers:</p>
+            {pendingOffers.map((off) => (
+              <div key={off._id} className="offer-row">
+                <span>Offer: <strong>Rs {off.amount}</strong></span>
+                <div className="offer-actions">
+                  <button className="btn-success" onClick={() => handleRespondOffer(off._id, 'accepted')}>Accept</button>
+                  <button className="btn-danger" onClick={() => handleRespondOffer(off._id, 'declined')}>Decline</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {error && <p style={{ color: 'red', margin: '8px 0' }}>{error}</p>}
 

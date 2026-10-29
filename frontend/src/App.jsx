@@ -7,6 +7,7 @@ import Register from './pages/Register';
 import Home from './pages/home';
 import PostItem from './pages/PostItems';
 import MyListings from './pages/MyListings';
+import Favorites from './pages/Favorites';
 import api from './api/axios';
 
 function App() {
@@ -51,6 +52,14 @@ function App() {
           element={
             <ProtectedRoute>
               <MyListings />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/favorites"
+          element={
+            <ProtectedRoute>
+              <Favorites />
             </ProtectedRoute>
           }
         />
