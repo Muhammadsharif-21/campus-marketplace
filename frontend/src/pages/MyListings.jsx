@@ -1,17 +1,27 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
+import ContactModal from '../components/ContactModal';
+import ChatModal from '../components/ChatModal';
 
 function MyListings() {
   const [listings, setListings] = useState([]);
   const [error, setError] = useState('');
 
+  // Modal States
+  const [selectedContactAuthor, setSelectedContactAuthor] = useState(null);
+  const [selectedContactListingTitle, setSelectedContactListingTitle] = useState('');
+  const [activeChatListing, setActiveChatListing] = useState(null);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+
   useEffect(() => {
     const fetchMine = async () => {
       try {
         const res = await api.get('/listings/mine');
-        setListings(res.data);
+        setListings(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
         setError('Could not load your listings');
+        setListings([]);
       }
     };
     fetchMine();
@@ -61,7 +71,27 @@ function MyListings() {
               </div>
               <h3 className="card-title">{item.title}</h3>
               {item.category === 'for-sale' && <p className="price">Rs {item.price}</p>}
+
+              {item.interestedUsers?.length > 0 && (
+                <div className="interested-section">
+                  <p className="interested-title">Interested Users ({item.interestedUsers.length}):</p>
+                  <ul className="interested-list">
+                    {item.interestedUsers.map(user => (
+                      <li key={user._id || user}>
+                        {user.name} ({user.email})
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="actions">
+                <button
+                  className="btn-chat"
+                  onClick={() => setActiveChatListing(item)}
+                >
+                  💬 Chat
+                </button>
                 {item.status === 'active' && (
                   <button className="btn-success" onClick={() => handleResolve(item._id)}>
                     Mark resolved
@@ -75,6 +105,22 @@ function MyListings() {
           </div>
         ))}
       </div>
+
+      {selectedContactAuthor && (
+        <ContactModal
+          author={selectedContactAuthor}
+          listingTitle={selectedContactListingTitle}
+          onClose={() => setSelectedContactAuthor(null)}
+        />
+      )}
+
+      {activeChatListing && (
+        <ChatModal
+          listing={activeChatListing}
+          currentUser={currentUser}
+          onClose={() => setActiveChatListing(null)}
+        />
+      )}
     </div>
   );
 }

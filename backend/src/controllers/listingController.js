@@ -1,6 +1,6 @@
 const Listing = require('../models/Listing');
-const cloudinary = require('../config/cloudinary')
-
+const Notification = require('../models/Notification');
+const cloudinary = require('../config/cloudinary');
 
 const createListing = async (req, res) => {
   try {
@@ -50,7 +50,8 @@ const getListings = async (req, res) => {
     }
 
     const listings = await Listing.find(filter)
-      .populate('postedBy', 'name email')
+      .populate('postedBy', 'name email phone')
+      .populate('interestedUsers', 'name email')
       .sort({ createdAt: -1 });
 
     res.status(200).json(listings);
@@ -63,9 +64,57 @@ const getListings = async (req, res) => {
 const getMyListings = async (req, res) => {
   try {
     const listings = await Listing.find({ postedBy: req.user._id })
+      .populate('postedBy', 'name email phone')
+      .populate('interestedUsers', 'name email phone')
       .sort({ createdAt: -1 });
 
     res.status(200).json(listings);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
+const toggleInterest = async (req, res) => {
+  try {
+    const listing = await Listing.findById(req.params.id).populate('postedBy', 'name email');
+    if (!listing) {
+      return res.status(404).json({ message: 'Listing not found' });
+    }
+
+    const userId = req.user._id.toString();
+    const index = listing.interestedUsers.findIndex(id => id.toString() === userId);
+
+    let isInterested = false;
+    if (index > -1) {
+      // Remove interest
+      listing.interestedUsers.splice(index, 1);
+    } else {
+      // Add interest
+      listing.interestedUsers.push(req.user._id);
+      isInterested = true;
+
+      // Notify the listing author if the user is not the author themselves
+      if (listing.postedBy._id.toString() !== userId) {
+        await Notification.create({
+          recipient: listing.postedBy._id,
+          sender: req.user._id,
+          listing: listing._id,
+          type: 'interested',
+          message: `${req.user.name} expressed interest in your listing "${listing.title}".`,
+        });
+      }
+    }
+
+    await listing.save();
+    const updated = await Listing.findById(req.params.id)
+      .populate('postedBy', 'name email phone')
+      .populate('interestedUsers', 'name email');
+
+    res.status(200).json({
+      message: isInterested ? 'Expressed interest' : 'Removed interest',
+      listing: updated
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: err.message });
@@ -90,7 +139,7 @@ const updateListing = async (req, res) => {
       req.params.id,
       { title, description, category, price, image, status },
       { new: true, runValidators: true }
-    );
+    ).populate('postedBy', 'name email phone');
 
     res.status(200).json(updated);
   } catch (err) {
@@ -119,5 +168,12 @@ const deleteListing = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
- 
-module.exports = { createListing, getListings, getMyListings, updateListing, deleteListing };
+
+module.exports = {
+  createListing,
+  getListings,
+  getMyListings,
+  toggleInterest,
+  updateListing,
+  deleteListing,
+};
