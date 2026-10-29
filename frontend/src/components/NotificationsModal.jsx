@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axios';
 
-function NotificationsModal({ onClose }) {
+function NotificationsModal({ onClose, onOpenChatForListing }) {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,12 +20,21 @@ function NotificationsModal({ onClose }) {
     fetchNotifications();
   }, []);
 
-  const handleMarkAsRead = async (id) => {
-    try {
-      await api.patch(`/notifications/${id}/read`);
-      setNotifications(notifications.map(n => n._id === id ? { ...n, read: true } : n));
-    } catch (err) {
-      console.error('Error marking as read', err);
+  const handleNotificationClick = async (n) => {
+    if (!n.read) {
+      try {
+        await api.patch(`/notifications/${n._id}/read`);
+        setNotifications(notifications.map(item => item._id === n._id ? { ...item, read: true } : item));
+      } catch (err) {
+        console.error('Error marking as read', err);
+      }
+    }
+
+    if (n.listing) {
+      onClose();
+      if (onOpenChatForListing) {
+        onOpenChatForListing(n.listing);
+      }
     }
   };
 
@@ -62,11 +71,12 @@ function NotificationsModal({ onClose }) {
               <div
                 key={n._id}
                 className={`notification-item ${n.read ? 'read' : 'unread'}`}
-                onClick={() => !n.read && handleMarkAsRead(n._id)}
+                onClick={() => handleNotificationClick(n)}
               >
                 <div className="notif-message">{n.message}</div>
                 <div className="notif-meta">
                   <span>{new Date(n.createdAt).toLocaleDateString()} {new Date(n.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                  {n.listing && <span className="notif-chat-hint">Click to open chat 💬</span>}
                   {!n.read && <span className="notif-badge">New</span>}
                 </div>
               </div>

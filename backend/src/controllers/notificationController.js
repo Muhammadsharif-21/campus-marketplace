@@ -4,7 +4,7 @@ const getNotifications = async (req, res) => {
   try {
     const notifications = await Notification.find({ recipient: req.user._id })
       .populate('sender', 'name email')
-      .populate('listing', 'title')
+      .populate('listing', 'title category price postedBy')
       .sort({ createdAt: -1 });
 
     res.status(200).json(notifications);

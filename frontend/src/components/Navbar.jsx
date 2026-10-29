@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import NotificationsModal from './NotificationsModal';
+import ChatModal from './ChatModal';
 
 function Navbar() {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [chatListing, setChatListing] = useState(null);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || 'null');
 
   const fetchUnread = async () => {
     if (!token) return;
@@ -16,7 +20,7 @@ function Navbar() {
       const unread = res.data.filter((n) => !n.read).length;
       setUnreadCount(unread);
     } catch (err) {
-      // Ignore errors when unauthenticated or token expired
+      // Ignore
     }
   };
 
@@ -62,6 +66,17 @@ function Navbar() {
             setShowNotifications(false);
             fetchUnread();
           }}
+          onOpenChatForListing={(listing) => {
+            setChatListing(listing);
+          }}
+        />
+      )}
+
+      {chatListing && (
+        <ChatModal
+          listing={chatListing}
+          currentUser={currentUser}
+          onClose={() => setChatListing(null)}
         />
       )}
     </>
