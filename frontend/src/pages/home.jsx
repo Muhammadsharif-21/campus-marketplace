@@ -108,47 +108,28 @@ function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#FAF7F2]">
-      {/* Hero Header */}
-      <div className="bg-[#2C221E] text-white py-12 px-4 sm:px-6 lg:px-8 shadow-inner relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="max-w-2xl text-center md:text-left">
-            <span className="inline-block px-3 py-1 bg-[#C85A32] text-white text-xs font-bold uppercase tracking-wider rounded-full mb-3">
-              Official Student Exchange
-            </span>
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight mb-4 leading-tight">
+      {/* Compact Hero Banner */}
+      <div className="bg-[#2C221E] text-white py-6 px-4 sm:px-6 lg:px-8 shadow-inner">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
               Buy, Sell & Trade on <span className="text-[#E0A96D]">Campus</span>
             </h1>
-            <p className="text-[#E5DEC9] text-base sm:text-lg mb-6 leading-relaxed">
-              Find textbooks, electronics, dorm furniture, and lost items right in your student community. Safe campus meetup spots guaranteed.
-            </p>
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4">
-              <Link
-                to="/post"
-                className="px-6 py-3 bg-[#C85A32] hover:bg-[#B04A25] text-white font-bold rounded-xl transition shadow-lg inline-flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined">add_circle</span>
-                List an Item Now
-              </Link>
-              {!token && (
-                <Link
-                  to="/register"
-                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-semibold rounded-xl border border-white/20 transition"
-                >
-                  Join Campus Community
-                </Link>
-              )}
-            </div>
           </div>
-          <div className="hidden lg:flex flex-col items-center justify-center bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm text-center max-w-xs">
-            <span className="material-symbols-outlined text-5xl text-[#E0A96D] mb-2">shield_person</span>
-            <h3 className="font-bold text-lg mb-1">Safe Meetups</h3>
-            <p className="text-xs text-[#E5DEC9]">Verified student sellers and mapped on-campus meetup locations.</p>
+          <div className="flex items-center gap-3">
+            <Link
+              to="/post"
+              className="px-5 py-2.5 bg-[#C85A32] hover:bg-[#B04A25] text-white font-bold rounded-xl transition shadow-sm inline-flex items-center gap-2 text-sm"
+            >
+              <span className="material-symbols-outlined text-lg">add_circle</span>
+              List an Item
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Category Chip Selector */}
         <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
           {CATEGORIES.map((cat) => (
@@ -202,7 +183,7 @@ function Home() {
 
             <div>
               <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                Price Filter (₹)
+                Price Filter (Rs.)
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -347,7 +328,7 @@ function Home() {
 
                   {item.category === 'for-sale' ? (
                     <p className="text-xl font-extrabold text-[#C85A32] mb-2">
-                      ₹{item.price}
+                      Rs. {item.price}
                     </p>
                   ) : (
                     <p className="text-sm font-bold text-green-700 mb-2 uppercase tracking-wide">
@@ -461,7 +442,7 @@ function Home() {
                 <span className="font-extrabold text-white text-lg">CampusMarket</span>
               </div>
               <p className="text-xs text-[#8C7A6B] leading-relaxed">
-                The trusted peer-to-peer marketplace for college campus students. Buy, sell, trade, and meet safely.
+                The trusted peer-to-peer marketplace for college campus students.
               </p>
             </div>
 
@@ -495,26 +476,15 @@ function Home() {
                 <span className="material-symbols-outlined text-sm">mail</span>
                 support@campusmarketplace.edu
               </a>
-              <div className="mt-3">
-                <a
-                  href="tel:+18005550199"
-                  className="inline-flex items-center gap-1.5 text-xs text-[#8C7A6B] hover:text-white"
-                >
-                  <span className="material-symbols-outlined text-sm">call</span>
-                  Campus Helpline: +1 (800) 555-0199
-                </a>
-              </div>
             </div>
           </div>
 
           <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-[#8C7A6B] gap-4">
-            <p>© 2026 Campus Marketplace. All rights reserved. Built for students.</p>
+            <p>© 2026 Campus Marketplace. All rights reserved.</p>
             <div className="flex items-center gap-4">
               <span className="hover:text-white transition cursor-pointer">Privacy Policy</span>
               <span>•</span>
               <span className="hover:text-white transition cursor-pointer">Terms of Service</span>
-              <span>•</span>
-              <span className="hover:text-white transition cursor-pointer">Safety Guidelines</span>
             </div>
           </div>
         </div>

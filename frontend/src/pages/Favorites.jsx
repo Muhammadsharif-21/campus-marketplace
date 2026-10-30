@@ -126,7 +126,7 @@ function Favorites() {
                 {item.title}
               </h3>
               {item.category === 'for-sale' ? (
-                <p className="text-lg font-extrabold text-[#C85A32] mb-2">₹{item.price}</p>
+                <p className="text-lg font-extrabold text-[#C85A32] mb-2">Rs. {item.price}</p>
               ) : (
                 <p className="text-xs font-bold text-green-700 mb-2 uppercase">{item.category}</p>
               )}

@@ -159,7 +159,7 @@ function PostItem() {
           {category === 'for-sale' && (
             <div>
               <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                Selling Price (₹) <span className="text-red-500">*</span>
+                Selling Price (Rs.) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"

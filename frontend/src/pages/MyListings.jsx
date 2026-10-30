@@ -146,7 +146,7 @@ function MyListings() {
             <div className="p-5 flex flex-col flex-grow">
               <h3 className="font-bold text-[#2C221E] text-lg mb-1">{item.title}</h3>
               {item.category === 'for-sale' && (
-                <p className="text-xl font-extrabold text-[#C85A32] mb-3">₹{item.price}</p>
+                <p className="text-xl font-extrabold text-[#C85A32] mb-3">Rs. {item.price}</p>
               )}
 
               {/* Interested Users Section */}
