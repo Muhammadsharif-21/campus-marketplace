@@ -119,7 +119,7 @@ function Home() {
           <div className="flex items-center gap-3">
             <Link
               to="/post"
-              className="px-5 py-2.5 bg-[#C85A32] hover:bg-[#B04A25] text-white font-bold rounded-xl transition shadow-sm inline-flex items-center gap-2 text-sm"
+              className="px-5 py-2.5 bg-[#C85A32] hover:bg-[#B04A25] text-[#FFFFFF] font-bold rounded-xl transition shadow-sm inline-flex items-center gap-2 text-sm"
             >
               <span className="material-symbols-outlined text-lg">add_circle</span>
               List an Item
@@ -431,9 +431,9 @@ function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-[#2C221E] text-[#E5DEC9] pt-12 pb-8 border-t border-white/10 mt-16">
+      <footer className="bg-[#2C221E] text-[#E5DEC9] pt-10 pb-8 border-t border-white/10 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#C85A32] text-white flex items-center justify-center font-bold text-lg">
@@ -457,35 +457,32 @@ function Home() {
             </div>
 
             <div>
-              <h4 className="text-white font-bold text-sm mb-3 uppercase tracking-wider">Categories</h4>
-              <ul className="space-y-2 text-xs">
-                <li><button onClick={() => setCategory('for-sale')} className="hover:text-white transition text-left">Textbooks & Books</button></li>
-                <li><button onClick={() => setCategory('for-sale')} className="hover:text-white transition text-left">Electronics & Laptops</button></li>
-                <li><button onClick={() => setCategory('free')} className="hover:text-white transition text-left">Free Campus Giveaways</button></li>
-                <li><button onClick={() => setCategory('lost')} className="hover:text-white transition text-left">Lost & Found Portal</button></li>
-              </ul>
-            </div>
-
-            <div>
-              <h4 className="text-white font-bold text-sm mb-3 uppercase tracking-wider">Campus Support</h4>
-              <p className="text-xs text-[#8C7A6B] mb-2">Have questions or need assistance?</p>
-              <a
-                href="mailto:support@campusmarketplace.edu"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#E0A96D] hover:underline"
-              >
-                <span className="material-symbols-outlined text-sm">mail</span>
-                support@campusmarketplace.edu
-              </a>
+              <h4 className="text-white font-bold text-sm mb-3 uppercase tracking-wider">Support Details</h4>
+              <div className="space-y-2 text-xs">
+                <div>
+                  <a
+                    href="mailto:steameraccount2222@gmail.com"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-[#E0A96D] hover:underline"
+                  >
+                    <span className="material-symbols-outlined text-sm">mail</span>
+                    steameraccount2222@gmail.com
+                  </a>
+                </div>
+                <div>
+                  <a
+                    href="tel:03127897548"
+                    className="inline-flex items-center gap-2 text-xs font-semibold text-[#E0A96D] hover:underline"
+                  >
+                    <span className="material-symbols-outlined text-sm">call</span>
+                    03127897548
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between text-xs text-[#8C7A6B] gap-4">
+          <div className="pt-6 border-t border-white/10 flex items-center justify-between text-xs text-[#8C7A6B]">
             <p>© 2026 Campus Marketplace. All rights reserved.</p>
-            <div className="flex items-center gap-4">
-              <span className="hover:text-white transition cursor-pointer">Privacy Policy</span>
-              <span>•</span>
-              <span className="hover:text-white transition cursor-pointer">Terms of Service</span>
-            </div>
           </div>
         </div>
       </footer>
