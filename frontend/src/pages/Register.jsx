@@ -36,7 +36,7 @@ function Register() {
           </div>
         </div>
         <h2 className="mt-4 text-center text-3xl font-extrabold text-[#2C221E] tracking-tight">
-          Create Student Account
+          Create Account
         </h2>
         <p className="mt-2 text-center text-sm text-[#8C7A6B]">
           Join your college campus exchange network to buy, sell, and trade safely.
