@@ -53,11 +53,11 @@ function Login() {
           <form className="space-y-5 max-w-none" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                Student Email Address
+                Email Address
               </label>
               <input
                 type="email"
-                placeholder="student@university.edu"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -66,17 +66,9 @@ function Login() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-bold text-[#8C7A6B] uppercase">
-                  Password
-                </label>
-                <Link
-                  to="/forgot-password"
-                  className="text-xs font-semibold text-[#C85A32] hover:underline"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
+              <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
+                Password
+              </label>
               <input
                 type="password"
                 placeholder="••••••••"
