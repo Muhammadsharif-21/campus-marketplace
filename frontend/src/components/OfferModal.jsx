@@ -38,7 +38,7 @@ function OfferModal({ listing, onClose, onOfferSubmitted }) {
 
         {error && <p style={{ color: 'red', margin: '8px 0' }}>{error}</p>}
 
-        <form onSubmit={handleSubmit} className="modal-form">
+        <form onSubmit={handleSubmit}>
           <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Your Offer Price (Rs):</label>
           <input
             type="number"
