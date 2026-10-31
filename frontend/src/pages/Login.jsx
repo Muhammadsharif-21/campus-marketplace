@@ -53,7 +53,7 @@ function Login() {
           <form className="space-y-5 max-w-none" onSubmit={handleSubmit}>
             <div>
               <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                Student Email Address
+                Email Address
               </label>
               <input
                 type="email"
