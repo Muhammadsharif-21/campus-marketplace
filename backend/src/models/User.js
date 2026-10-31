@@ -42,6 +42,12 @@ const userSchema = new mongoose.Schema({
     ref: 'Listing',
   }],
   ratings: [ratingSchema],
+  resetPasswordToken: {
+    type: String,
+  },
+  resetPasswordExpires: {
+    type: Date,
+  },
 }, { timestamps: true });
 
 userSchema.pre('save', async function () {
