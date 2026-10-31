@@ -163,3 +163,245 @@ body {
   border: 1px solid #E5DEC9;
   border-radius: 0.75rem;
 }
+
+
+
+
+/* ===== Notifications modal ===== */
+.btn-secondary {
+  align-self: flex-end;
+  background: transparent;
+  border: 1px solid #E5DEC9;
+  color: #C85A32;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.btn-secondary:hover {
+  background: #FAF7F2;
+}
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notification-item {
+  background: #ffffff;
+  border: 1px solid #E5DEC9;
+  border-radius: 0.75rem;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background-color 0.15s, box-shadow 0.15s;
+}
+.notification-item:hover {
+  background: #FAF7F2;
+  box-shadow: 0 2px 8px rgba(44, 34, 30, 0.08);
+}
+.notification-item.unread {
+  background: #FFF4EE;
+  border-left: 4px solid #C85A32;
+}
+.notification-item.read .notif-message {
+  font-weight: 500;
+  color: #5E5047;
+}
+
+.notif-message {
+  margin-bottom: 6px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #2C221E;
+}
+
+.notif-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.75rem;
+  color: #8C7A6B;
+}
+
+.notif-chat-hint {
+  color: #C85A32;
+  font-weight: 600;
+}
+
+.notif-badge {
+  margin-left: auto;
+  background: #C85A32;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ===== Campus map (post item page) ===== */
+.map-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.map-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.btn-gps {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #C85A32;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.6rem;
+  padding: 9px 14px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.btn-gps:hover {
+  background: #B04A25;
+}
+
+.spot-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.spot-chip {
+  background: #ffffff;
+  color: #2C221E;
+  border: 1px solid #E5DEC9;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.spot-chip:hover {
+  border-color: #C85A32;
+  color: #C85A32;
+}
+.spot-chip.active {
+  background: #C85A32;
+  border-color: #C85A32;
+  color: #ffffff;
+}
+
+.gps-status {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #8C7A6B;
+}
+
+.map-coords-label {
+  margin: 10px 0 0;
+  font-size: 0.85rem;
+  color: #5E5047;
+}
+
+/* keeps the map from floating above the sticky navbar */
+.leaflet-container {
+  z-index: 0;
+}
+
+/* ===== Chat modal extras (offers banner and message box) ===== */
+.offers-banner {
+  background: #FFF4EE;
+  border: 1px solid #F0D5C6;
+  border-radius: 0.75rem;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.offers-title {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #C85A32;
+}
+.offer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid #F0D5C6;
+  font-size: 0.9rem;
+}
+.offer-row:first-of-type {
+  border-top: none;
+}
+.offer-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-success,
+.btn-danger {
+  border: none;
+  border-radius: 0.5rem;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+}
+.btn-success { background: #2f9e44; }
+.btn-success:hover { background: #2b8a3e; }
+.btn-danger { background: #e03131; }
+.btn-danger:hover { background: #c92a2a; }
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+}
+.chat-form input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #E5DEC9;
+  border-radius: 0.6rem;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+.chat-form input:focus {
+  outline: none;
+  border-color: #C85A32;
+}
+.chat-form button {
+  background: #C85A32;
+  color: #ffffff;
+  border: none;
+  border-radius: 0.6rem;
+  padding: 0 18px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chat-form button:hover {
+  background: #B04A25;
+}
+
+.message-text {
+  word-wrap: break-word;
+}
