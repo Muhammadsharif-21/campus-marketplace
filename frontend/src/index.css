@@ -405,3 +405,91 @@ body {
 .message-text {
   word-wrap: break-word;
 }
+
+
+
+/* ===== Forms inside modals ===== */
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal-form label {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2C221E;
+}
+
+.modal-form select,
+.modal-form textarea,
+.modal-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #E5DEC9;
+  border-radius: 0.6rem;
+  background: #FAF7F2;
+  font-family: inherit;
+  font-size: 0.92rem;
+  color: #2C221E;
+}
+
+.modal-form textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.modal-form select:focus,
+.modal-form textarea:focus,
+.modal-form input:focus {
+  outline: none;
+  border-color: #C85A32;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(200, 90, 50, 0.15);
+}
+
+.modal-form button[type="submit"] {
+  margin-top: 12px;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 0.6rem;
+  background: #C85A32;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.modal-form button[type="submit"]:hover {
+  background: #B04A25;
+}
+
+.modal-form button[type="submit"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+
+.btn-primary {
+  margin-top: 12px;
+  padding: 11px 16px;
+  border: none;
+  border-radius: 0.6rem;
+  background: #C85A32;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.btn-primary:hover {
+  background: #B04A25;
+}
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

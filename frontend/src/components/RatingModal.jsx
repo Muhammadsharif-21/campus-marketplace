@@ -37,7 +37,7 @@ function RatingModal({ targetUser, onClose, onRatingSubmitted }) {
 
         {error && <p style={{ color: 'red', margin: '8px 0' }}>{error}</p>}
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="modal-form">
           <label style={{ fontWeight: 600, fontSize: '0.9rem' }}>Score (1 to 5 stars):</label>
           <select value={rating} onChange={(e) => setRating(e.target.value)}>
             <option value={5}>⭐⭐⭐⭐⭐ (5 - Excellent)</option>
