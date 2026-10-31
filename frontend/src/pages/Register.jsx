@@ -69,11 +69,11 @@ function Register() {
 
             <div>
               <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                University Email Address <span className="text-red-500">*</span>
+                Email Address <span className="text-red-500">*</span>
               </label>
               <input
                 type="email"
-                placeholder="alex@university.edu"
+                placeholder="alex@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required

@@ -36,7 +36,7 @@ function ResetPassword() {
     }
 
     if (!token && (!email.trim() || !name.trim())) {
-      setError('Please provide your registered university email and full name.');
+      setError('Please provide your email address and full name.');
       return;
     }
 
@@ -120,11 +120,11 @@ function ResetPassword() {
                 <>
                   <div>
                     <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                      Student University Email
+                      Email Address
                     </label>
                     <input
                       type="email"
-                      placeholder="student@university.edu"
+                      placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
