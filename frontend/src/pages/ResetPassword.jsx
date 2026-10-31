@@ -1,25 +1,32 @@
 import { useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useSearchParams, useLocation, useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
 
 function ResetPassword() {
   const { token: urlToken } = useParams();
-  const [token, setToken] = useState(urlToken || '');
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const initialEmail = searchParams.get('email') || location.state?.email || '';
+  const initialCode = urlToken || location.state?.code || '';
+
+  const [email, setEmail] = useState(initialEmail);
+  const [code, setCode] = useState(initialCode);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
 
-    const activeToken = token.trim();
-    if (!activeToken) {
-      setError('Password reset token is required.');
+    const cleanCode = code.trim();
+    if (!cleanCode) {
+      setError('Please enter the 6-digit verification code sent to your email.');
       return;
     }
 
@@ -36,13 +43,17 @@ function ResetPassword() {
     setLoading(true);
 
     try {
-      const res = await api.post(`/auth/reset-password/${activeToken}`, { password });
+      const res = await api.post('/auth/reset-password', {
+        email: email.trim(),
+        code: cleanCode,
+        password,
+      });
       setSuccess(res.data.message || 'Password has been reset successfully!');
       setTimeout(() => {
         navigate('/login');
       }, 2500);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reset password. The link may have expired.');
+      setError(err.response?.data?.message || 'Failed to reset password. The code may be invalid or expired.');
     } finally {
       setLoading(false);
     }
@@ -53,14 +64,14 @@ function ResetPassword() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
           <div className="w-12 h-12 rounded-xl bg-[#C85A32] text-white flex items-center justify-center font-bold text-2xl shadow-md">
-            <span className="material-symbols-outlined text-3xl">key</span>
+            <span className="material-symbols-outlined text-3xl">lock_open</span>
           </div>
         </div>
         <h2 className="mt-4 text-center text-3xl font-extrabold text-[#2C221E] tracking-tight">
           Reset Your Password
         </h2>
         <p className="mt-2 text-center text-sm text-[#8C7A6B]">
-          Enter your new password below to regain access to your account.
+          Enter your 6-digit email code and choose your new password.
         </p>
       </div>
 
@@ -83,6 +94,7 @@ function ResetPassword() {
                 Redirecting to login page in a few seconds...
               </p>
               <button
+                type="button"
                 onClick={() => navigate('/login')}
                 className="w-full py-2.5 px-4 bg-[#C85A32] hover:bg-[#B04A25] text-white font-bold rounded-lg shadow-sm transition text-xs flex items-center justify-center gap-1.5"
               >
@@ -93,21 +105,34 @@ function ResetPassword() {
 
           {!success && (
             <form className="space-y-4 max-w-none" onSubmit={handleSubmit}>
-              {!urlToken && (
-                <div>
-                  <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                    Reset Token
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Enter reset token"
-                    value={token}
-                    onChange={(e) => setToken(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#E5DEC9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C85A32] focus:bg-white text-[#2C221E]"
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
+                  Student Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="student@university.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#E5DEC9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C85A32] focus:bg-white text-[#2C221E]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
+                  6-Digit Verification Code
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 123456"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  required
+                  className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#E5DEC9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C85A32] focus:bg-white text-[#2C221E] font-mono tracking-widest text-lg"
+                />
+              </div>
 
               <div>
                 <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
@@ -150,7 +175,7 @@ function ResetPassword() {
                     Resetting Password...
                   </>
                 ) : (
-                  'Set New Password'
+                  'Confirm & Update Password'
                 )}
               </button>
             </form>

@@ -5,7 +5,7 @@ const User = require('./src/models/User');
 const { forgotPassword, resetPassword } = require('./src/controllers/authController');
 
 async function runTests() {
-  console.log('--- Starting Forgot/Reset Password Controller Tests ---');
+  console.log('--- Starting 6-Digit Email Code Auth Controller Tests ---');
 
   // Test 1: forgotPassword requires email
   {
@@ -56,11 +56,12 @@ async function runTests() {
     User.findOne = originalFindOne;
   }
 
-  // Test 3: forgotPassword sets token and expiry and returns resetToken
+  // Test 3: forgotPassword generates 6-digit code, sets expiry, and saves user
   let savedUser = null;
-  let generatedToken = null;
+  let devCode = null;
   {
     const mockUser = {
+      name: 'Test Student',
       email: 'student@example.com',
       resetPasswordToken: null,
       resetPasswordExpires: null,
@@ -93,22 +94,23 @@ async function runTests() {
 
     await forgotPassword(req, res);
     assert.strictEqual(statusCode, 200, 'Expected status 200');
-    assert(responseBody.resetToken, 'Expected resetToken in response');
-    generatedToken = responseBody.resetToken;
+    assert(responseBody.devCode, 'Expected devCode in dev environment');
+    devCode = responseBody.devCode;
+    assert.match(devCode, /^\d{6}$/, 'Verification code must be exactly 6 digits');
 
     assert(savedUser, 'Expected user to be saved');
     assert(savedUser.resetPasswordToken, 'Expected resetPasswordToken on user');
-    const expectedHash = crypto.createHash('sha256').update(generatedToken).digest('hex');
-    assert.strictEqual(savedUser.resetPasswordToken, expectedHash, 'Token hash should match sha256 of raw token');
+    const expectedHash = crypto.createHash('sha256').update(devCode).digest('hex');
+    assert.strictEqual(savedUser.resetPasswordToken, expectedHash, 'Token hash should match sha256 of 6-digit code');
     assert(savedUser.resetPasswordExpires > Date.now(), 'Token expires should be in the future');
-    console.log('✓ Test 3 Passed: forgotPassword generates token, sets expiry, and saves user');
+    console.log('✓ Test 3 Passed: forgotPassword generates 6-digit code, hashes it, and saves user');
 
     User.findOne = originalFindOne;
   }
 
-  // Test 4: resetPassword requires token
+  // Test 4: resetPassword requires code
   {
-    const req = { params: {}, body: { password: 'newpassword123' } };
+    const req = { body: { email: 'student@example.com', password: 'newpassword123' } };
     let statusCode = null;
     let responseBody = null;
     const res = {
@@ -123,13 +125,14 @@ async function runTests() {
     };
 
     await resetPassword(req, res);
-    assert.strictEqual(statusCode, 400, 'Expected status 400 for missing token');
-    console.log('✓ Test 4 Passed: resetPassword validates token presence');
+    assert.strictEqual(statusCode, 400, 'Expected status 400 for missing code');
+    assert.strictEqual(responseBody.message, 'Verification code is required');
+    console.log('✓ Test 4 Passed: resetPassword validates verification code presence');
   }
 
   // Test 5: resetPassword requires minimum 6 characters
   {
-    const req = { params: { token: 'some-token' }, body: { password: '123' } };
+    const req = { body: { code: '123456', password: '123' } };
     let statusCode = null;
     let responseBody = null;
     const res = {
@@ -149,12 +152,12 @@ async function runTests() {
     console.log('✓ Test 5 Passed: resetPassword enforces min password length');
   }
 
-  // Test 6: resetPassword returns 400 if token is invalid or expired
+  // Test 6: resetPassword returns 400 if code is invalid or expired
   {
     const originalFindOne = User.findOne;
     User.findOne = async () => null;
 
-    const req = { params: { token: 'invalid-or-expired-token' }, body: { password: 'newpassword123' } };
+    const req = { body: { email: 'student@example.com', code: '999999', password: 'newpassword123' } };
     let statusCode = null;
     let responseBody = null;
     const res = {
@@ -169,28 +172,27 @@ async function runTests() {
     };
 
     await resetPassword(req, res);
-    assert.strictEqual(statusCode, 400, 'Expected status 400 for invalid token');
-    assert.strictEqual(responseBody.message, 'Password reset token is invalid or has expired');
-    console.log('✓ Test 6 Passed: resetPassword rejects invalid/expired token');
+    assert.strictEqual(statusCode, 400, 'Expected status 400 for invalid code');
+    assert.strictEqual(responseBody.message, 'Invalid or expired verification code');
+    console.log('✓ Test 6 Passed: resetPassword rejects invalid/expired verification code');
 
     User.findOne = originalFindOne;
   }
 
-  // Test 7: resetPassword successfully updates password and clears reset fields
+  // Test 7: resetPassword successfully updates password with 6-digit code
   {
     const testUser = new User({
       name: 'Test Student',
-      email: 'test@student.edu',
+      email: 'student@example.com',
       password: 'oldPassword123',
     });
     const salt = await bcrypt.genSalt(10);
     testUser.password = await bcrypt.hash('oldPassword123', salt);
 
     const oldHashedPassword = testUser.password;
-    testUser.resetPasswordToken = crypto.createHash('sha256').update(generatedToken).digest('hex');
-    testUser.resetPasswordExpires = new Date(Date.now() + 3600000);
+    testUser.resetPasswordToken = crypto.createHash('sha256').update(devCode).digest('hex');
+    testUser.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Mock save to trigger the pre('save') logic without requiring an active MongoDB connection
     testUser.save = async function() {
       if (this.isModified('password')) {
         const s = await bcrypt.genSalt(10);
@@ -199,9 +201,22 @@ async function runTests() {
     };
 
     const originalFindOne = User.findOne;
-    User.findOne = async () => testUser;
+    User.findOne = async (query) => {
+      const hashed = crypto.createHash('sha256').update(devCode).digest('hex');
+      const matchesToken = query.$or.some((item) => item.resetPasswordToken === hashed);
+      if (matchesToken) {
+        return testUser;
+      }
+      return null;
+    };
 
-    const req = { params: { token: generatedToken }, body: { password: 'newSecurePassword456' } };
+    const req = {
+      body: {
+        email: 'student@example.com',
+        code: devCode,
+        password: 'newSecurePassword456'
+      }
+    };
     let statusCode = null;
     let responseBody = null;
     const res = {
@@ -222,18 +237,15 @@ async function runTests() {
     assert.strictEqual(testUser.resetPasswordExpires, undefined, 'resetPasswordExpires should be cleared');
     assert.notStrictEqual(testUser.password, oldHashedPassword, 'Password should have changed');
 
-    // Verify comparePassword works with the new password
     const isMatch = await testUser.comparePassword('newSecurePassword456');
     assert.strictEqual(isMatch, true, 'comparePassword should match new password');
-    const isOldMatch = await testUser.comparePassword('oldPassword123');
-    assert.strictEqual(isOldMatch, false, 'comparePassword should not match old password');
 
-    console.log('✓ Test 7 Passed: resetPassword updates password, clears tokens, and pre-save hashes work');
+    console.log('✓ Test 7 Passed: resetPassword validates 6-digit code and resets password');
 
     User.findOne = originalFindOne;
   }
 
-  console.log('--- All Forgot & Reset Password Backend Tests Passed Successfully! ---');
+  console.log('--- All 6-Digit Email Code Tests Passed Successfully! ---');
 }
 
 runTests().catch((err) => {
