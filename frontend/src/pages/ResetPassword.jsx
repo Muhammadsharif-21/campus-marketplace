@@ -107,7 +107,7 @@ function ResetPassword() {
             <form className="space-y-4 max-w-none" onSubmit={handleSubmit}>
               <div>
                 <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                  Student Email
+                  Email
                 </label>
                 <input
                   type="email"
