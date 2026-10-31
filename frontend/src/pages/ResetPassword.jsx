@@ -9,10 +9,11 @@ function ResetPassword() {
   const navigate = useNavigate();
 
   const initialEmail = searchParams.get('email') || location.state?.email || '';
-  const initialCode = urlToken || location.state?.code || '';
+  const initialToken = urlToken || location.state?.token || '';
 
   const [email, setEmail] = useState(initialEmail);
-  const [code, setCode] = useState(initialCode);
+  const [name, setName] = useState('');
+  const [token] = useState(initialToken);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -24,12 +25,6 @@ function ResetPassword() {
     setError('');
     setSuccess('');
 
-    const cleanCode = code.trim();
-    if (!cleanCode) {
-      setError('Please enter the 6-digit verification code sent to your email.');
-      return;
-    }
-
     if (password.length < 6) {
       setError('Password must be at least 6 characters long.');
       return;
@@ -40,20 +35,35 @@ function ResetPassword() {
       return;
     }
 
+    if (!token && (!email.trim() || !name.trim())) {
+      setError('Please provide your registered university email and full name.');
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const res = await api.post('/auth/reset-password', {
-        email: email.trim(),
-        code: cleanCode,
-        password,
-      });
+      const payload = { password };
+      if (token) {
+        payload.token = token;
+      }
+      if (email.trim()) {
+        payload.email = email.trim();
+      }
+      if (name.trim()) {
+        payload.name = name.trim();
+      }
+
+      const res = await api.post('/auth/reset-password', payload);
       setSuccess(res.data.message || 'Password has been reset successfully!');
       setTimeout(() => {
         navigate('/login');
-      }, 2500);
+      }, 1800);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to reset password. The code may be invalid or expired.');
+      setError(
+        err.response?.data?.message ||
+        'Failed to reset password. Please check your verification details and try again.'
+      );
     } finally {
       setLoading(false);
     }
@@ -71,7 +81,7 @@ function ResetPassword() {
           Reset Your Password
         </h2>
         <p className="mt-2 text-center text-sm text-[#8C7A6B]">
-          Enter your 6-digit email code and choose your new password.
+          Choose your new secure password below.
         </p>
       </div>
 
@@ -80,7 +90,7 @@ function ResetPassword() {
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-xl flex items-center gap-2">
               <span className="material-symbols-outlined text-lg">error</span>
-              {error}
+              <span>{error}</span>
             </div>
           )}
 
@@ -91,7 +101,7 @@ function ResetPassword() {
                 <span>{success}</span>
               </div>
               <p className="text-xs text-green-700">
-                Redirecting to login page in a few seconds...
+                Redirecting you to the sign-in page...
               </p>
               <button
                 type="button"
@@ -99,40 +109,47 @@ function ResetPassword() {
                 className="w-full py-2.5 px-4 bg-[#C85A32] hover:bg-[#B04A25] text-white font-bold rounded-lg shadow-sm transition text-xs flex items-center justify-center gap-1.5"
               >
                 Go to Sign In Immediately
+                <span className="material-symbols-outlined text-sm">arrow_forward</span>
               </button>
             </div>
           )}
 
           {!success && (
             <form className="space-y-4 max-w-none" onSubmit={handleSubmit}>
-              <div>
-                <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  placeholder="student@university.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#E5DEC9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C85A32] focus:bg-white text-[#2C221E]"
-                />
-              </div>
+              {!token && (
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
+                      Student University Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="student@university.edu"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#E5DEC9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C85A32] focus:bg-white text-[#2C221E]"
+                    />
+                  </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
-                  6-Digit Verification Code
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 123456"
-                  maxLength={6}
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                  required
-                  className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#E5DEC9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C85A32] focus:bg-white text-[#2C221E] font-mono tracking-widest text-lg"
-                />
-              </div>
+                  <div>
+                    <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
+                      Account Full Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Alex Johnson"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 bg-[#FAF7F2] border border-[#E5DEC9] rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#C85A32] focus:bg-white text-[#2C221E]"
+                    />
+                    <p className="mt-1 text-[11px] text-[#8C7A6B]">
+                      Used to verify account ownership.
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-xs font-bold text-[#8C7A6B] uppercase mb-1">
@@ -167,12 +184,12 @@ function ResetPassword() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 px-4 bg-[#C85A32] hover:bg-[#B04A25] text-white font-bold rounded-xl shadow-md transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 bg-[#C85A32] hover:bg-[#B04A25] text-white font-bold rounded-xl shadow-md transition text-sm disabled:opacity-50 flex items-center justify-center gap-2 mt-2"
               >
                 {loading ? (
                   <>
                     <span className="material-symbols-outlined animate-spin text-lg">sync</span>
-                    Resetting Password...
+                    Updating Password...
                   </>
                 ) : (
                   'Confirm & Update Password'
