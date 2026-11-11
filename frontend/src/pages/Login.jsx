@@ -107,7 +107,7 @@ function Login() {
             <p className="text-xs text-[#8C7A6B]">
               Don't have an account yet?{' '}
               <Link to="/register" className="font-bold text-[#C85A32] hover:underline">
-                Create a Student Account
+                Create Account
               </Link>
             </p>
           </div>

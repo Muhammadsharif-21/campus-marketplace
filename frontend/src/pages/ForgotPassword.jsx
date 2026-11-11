@@ -67,7 +67,7 @@ function ForgotPassword() {
           Reset Your Password
         </h2>
         <p className="mt-2 text-center text-sm text-[#8C7A6B]">
-          Verify your student account details to set a new password instantly.
+          Verify your account details to set a new password instantly.
         </p>
       </div>
 

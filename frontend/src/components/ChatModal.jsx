@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '../api/axios';
 
+
 function ChatModal({ listing, currentUser, onClose }) {
   const [messages, setMessages] = useState([]);
   const [currentListing, setCurrentListing] = useState(listing);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
 
   const isSeller = (currentListing.postedBy?._id || currentListing.postedBy) === currentUser?.id;
@@ -44,25 +46,32 @@ function ChatModal({ listing, currentUser, onClose }) {
   };
 
   const handleSend = async (e) => {
-    e.preventDefault();
-    if (!text.trim()) return;
-    try {
-      setError('');
-      let receiverId = undefined;
-      if (isSeller) {
-        const otherMsg = messages.find(m => (m.sender?._id || m.sender) !== currentUser?.id);
-        if (otherMsg) {
-          receiverId = otherMsg.sender?._id || otherMsg.sender;
-        }
-      }
+  e.preventDefault();
+  const trimmed = text.trim();
+  if (!trimmed || sending) return;
 
-      await api.post(`/messages/${currentListing._id}`, { text, receiverId });
-      setText('');
-      fetchMessages();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send message');
+  setSending(true);
+  setError('');
+  setText('');
+
+  try {
+    let receiverId = undefined;
+    if (isSeller) {
+      const otherMsg = messages.find(m => (m.sender?._id || m.sender) !== currentUser?.id);
+      if (otherMsg) {
+        receiverId = otherMsg.sender?._id || otherMsg.sender;
+      }
     }
-  };
+
+    await api.post(`/messages/${currentListing._id}`, { text: trimmed, receiverId });
+    await fetchMessages();
+  } catch (err) {
+    setText(trimmed);
+    setError(err.response?.data?.message || 'Failed to send message');
+  } finally {
+    setSending(false);
+  }
+};
 
   const pendingOffers = currentListing.offers?.filter(o => o.status === 'pending') || [];
 
@@ -120,7 +129,9 @@ function ChatModal({ listing, currentUser, onClose }) {
             value={text}
             onChange={(e) => setText(e.target.value)}
           />
-          <button type="submit">Send</button>
+          <button type="submit" disabled={sending}>
+            {sending ? 'Sending...' : 'Send'}
+          </button>
         </form>
       </div>
     </div>

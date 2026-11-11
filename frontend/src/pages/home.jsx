@@ -367,7 +367,7 @@ function Home() {
                     {item.interestedUsers?.length > 0 && (
                       <p className="text-[#C85A32] font-semibold text-[11px] flex items-center gap-1">
                         <span className="material-symbols-outlined text-sm">favorite</span>
-                        {item.interestedUsers.length} student(s) interested
+                        {item.interestedUsers.length} {item.interestedUsers.length === 1 ? 'person' : 'people'} interested
                       </p>
                     )}
                   </div>
