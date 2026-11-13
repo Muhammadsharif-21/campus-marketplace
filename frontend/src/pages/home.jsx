@@ -50,7 +50,16 @@ function Home() {
       if (maxPrice) params.maxPrice = maxPrice;
       if (sortBy) params.sortBy = sortBy;
 
-      const res = await api.get('/listings', { params });
+            let res;
+      for (let attempt = 1; attempt <= 6; attempt++) {  // try up to 6 times
+        try {
+          res = await api.get('/listings', { params }); // same request as before
+          break;                                        // success, stop retrying
+        } catch (err) {
+          if (attempt === 6) throw err;                 // last try failed, show the error
+          await new Promise((r) => setTimeout(r, 10000)); // wait 10 seconds, let the server wake
+        }
+      };
       setListings(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       setError('Could not load listings. Please check your connection.');
@@ -226,7 +235,7 @@ function Home() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-16 text-[#8C7A6B]">
             <span className="material-symbols-outlined text-4xl animate-spin mb-2">sync</span>
-            <p className="font-semibold text-sm">Loading active campus listings...</p>
+            <p className="font-semibold text-sm">Waking up server, this can take up to a minute...</p>
           </div>
         )}
 
