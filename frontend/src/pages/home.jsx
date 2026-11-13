@@ -62,7 +62,7 @@ function Home() {
       };
       setListings(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      setError('Could not load listings. Please check your connection.');
+      setError('Server is taking longer than usual to start. Please wait a minute and refresh the page.');
       setListings([]);
     } finally {
       setLoading(false);
