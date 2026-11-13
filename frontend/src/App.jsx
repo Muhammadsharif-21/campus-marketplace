@@ -12,6 +12,7 @@ import MyListings from './pages/MyListings';
 import Favorites from './pages/Favorites';
 import NotFound from './pages/NotFound';
 import api from './api/axios';
+import { API_URL } from "./config";
 
 function App() {
   useEffect(() => {
@@ -33,6 +34,10 @@ function App() {
       }
     };
     checkAuth();
+  }, []);
+
+  useEffect(() => {
+  fetch(`${API_URL.replace(/\/api$/, "")}/health`).catch(() => {}); // wake the server, ignore the result
   }, []);
 
   return (
