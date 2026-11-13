@@ -12,6 +12,7 @@ const app = express();
 
 //Middleware
 app.use(cors());
+app.get("/health", (req, res) => res.json({ ok: true }));
 app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
