@@ -7,13 +7,28 @@ const listingRoutes = require('./src/routes/listingRoutes');
 const notificationRoutes = require('./src/routes/notificationRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
 const userRoutes = require('./src/routes/userRoutes');
-
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const app = express();
 
 //Middleware
-app.use(cors());
+app.use(cors({
+    origin: [process.env.CLIENT_URl, 'http://localhost:5173'].filter(Boolean),
+}));
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.use(express.json());
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many attempts, please try again in 15 minutes' },
+});
+app.use('/api/auth', authLimiter);
+
+app.set('trust proxy', 1);
+app.use(helmet());
 app.use('/api/auth', authRoutes);
 app.use('/api/listings', listingRoutes);
 app.use('/api/notifications', notificationRoutes);
