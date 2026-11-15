@@ -40,6 +40,8 @@ app.get('/', (req, res) => {
     res.send('Campus Marketplace API is running');
 });
 
+
+if (require.main === module) {
 mongoose.connect(process.env.MONGO_URI)
 .then(() => {
     console.log("MongoDB connected");
@@ -47,3 +49,6 @@ mongoose.connect(process.env.MONGO_URI)
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 })
 .catch((err) => console.error('MongoDB connection error:', err));
+}
+
+module.exports = app;

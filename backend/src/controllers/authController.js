@@ -2,6 +2,9 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^(92|0)?3\d{9}$/;
+
 const generateToken = (userId) => {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
@@ -9,6 +12,19 @@ const generateToken = (userId) => {
 const register = async (req, res) => {
     try {
         const { name, email, password, phone } = req.body;
+
+        if ([name, email, password, phone].some((v) => typeof v !== 'string' || !v.trim())) {
+  return res.status(400).json({ message: 'All fields are required' });
+}
+if (!EMAIL_REGEX.test(email.trim())) {
+  return res.status(400).json({ message: 'Please enter a valid email address' });
+}
+if (password.length < 8) {
+  return res.status(400).json({ message: 'Password must be at least 8 characters' });
+}
+if (!PHONE_REGEX.test(phone.replace(/\D/g, ''))) {
+  return res.status(400).json({ message: 'Please enter a valid mobile number, like 0300 1234567' });
+}
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
