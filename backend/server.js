@@ -13,7 +13,7 @@ const app = express();
 
 //Middleware
 app.use(cors({
-    origin: [process.env.CLIENT_URl, 'http://localhost:5173'].filter(Boolean),
+    origin: [process.env.CLIENT_URL, 'http://localhost:5173'].filter(Boolean),
 }));
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.use(express.json());
