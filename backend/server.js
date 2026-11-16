@@ -12,9 +12,18 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 
 //Middleware
-app.use(cors({
-    origin: [process.env.CLIENT_URL, 'http://localhost:5173'].filter(Boolean),
-}));
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  'https://camp-market-rust.vercel.app',
+  'http://localhost:5173',
+]
+  .filter(Boolean)
+  .map((o) => o.replace(/\/+$/, ''));
+
+console.log('Allowed origins:', allowedOrigins);
+
+app.use(cors({ origin: allowedOrigins }));
+
 app.get("/health", (req, res) => res.json({ ok: true }));
 app.use(express.json());
 
