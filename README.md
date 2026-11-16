@@ -35,14 +35,14 @@ A full-stack marketplace for university students to buy, sell, give away, and re
 | Auth and security | JWT, bcrypt, Helmet, restricted CORS, rate limiting on auth routes |
 | File storage | Cloudinary (via Multer) |
 | Testing | Jest, Supertest |
-| CI/CD | GitHub Actions, auto-deploy on merge |
-| Hosting | Vercel (frontend), Railway (backend) |
+| CI/CD | GitHub Actions checks on every pull request, Vercel auto-deploy |
+| Hosting | Vercel (frontend), SnapDeploy (backend) |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  A["React + Vite (Vercel)"] -->|"HTTPS + JWT"| B["Express API (Railway)"]
+  A["React + Vite (Vercel)"] -->|"HTTPS + JWT"| B["Express API (SnapDeploy)"]
   B --> C[("MongoDB Atlas")]
   B --> D["Cloudinary (images)"]
 ```
@@ -153,7 +153,7 @@ Every pull request and push to `main` runs GitHub Actions:
 - **Backend:** install, syntax check of every source file, and the Jest test suite
 - **Frontend:** install and a full production build
 
-When changes are merged to `main`, Vercel and Railway redeploy automatically.
+When changes are merged to `main`, Vercel redeploys the frontend automatically, and the backend is redeployed on SnapDeploy.
 
 ## Security notes
 
