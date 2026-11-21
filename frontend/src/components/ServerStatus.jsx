@@ -7,6 +7,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function ServerStatus() {
   const [waking, setWaking] = useState(false);
+  const [wakeTick, setWakeTick] = useState(0);
 
   useEffect(() => {
     let stopped = false;
@@ -28,9 +29,7 @@ function ServerStatus() {
 
         if (stopped) return;
         setWaking(true);
-
-        // a plain "visit", like opening the URL in a tab
-        fetch(healthUrl, { mode: 'no-cors', cache: 'no-store' }).catch(() => {});
+        if (attempt % 3 === 0) setWakeTick((n) => n + 1);
         await sleep(4000);
       }
     };
@@ -45,7 +44,16 @@ function ServerStatus() {
 
   return (
     <div className="server-banner">
-      Waking up the server, this can take up to a minute...
+      Waking up the server, this can take up to a minute...{' '}
+      <a href={healthUrl} target="_blank" rel="noopener noreferrer">
+        Tap here if it takes too long
+      </a>
+      <iframe
+        key={wakeTick}
+        src={`${healthUrl}?wake=${wakeTick}`}
+        title="wake"
+        style={{ display: 'none' }}
+      />
     </div>
   );
 }
