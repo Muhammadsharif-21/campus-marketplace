@@ -182,3 +182,13 @@
     border-right-color: var(--border);
   }
 }
+
+.server-banner {
+  background: #FFF4EE;
+  border-bottom: 1px solid #F0D5C6;
+  color: #C85A32;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 12px;
+}

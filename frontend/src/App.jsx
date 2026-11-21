@@ -13,6 +13,9 @@ import Favorites from './pages/Favorites';
 import NotFound from './pages/NotFound';
 import api from './api/axios';
 import { API_URL } from "./config";
+import ServerStatus from './components/ServerStatus';
+
+
 
 function App() {
   useEffect(() => {
@@ -42,6 +45,7 @@ function App() {
 
   return (
     <>
+      <ServerStatus />
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
