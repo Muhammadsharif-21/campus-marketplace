@@ -44,7 +44,7 @@ function ServerStatus() {
 
   return (
     <div className="server-banner">
-      Waking up the server, this can take up to a minute...{' '}
+      {' '}
       <a href={healthUrl} target="_blank" rel="noopener noreferrer">
         Tap here if it takes too long
       </a>
