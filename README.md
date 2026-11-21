@@ -177,4 +177,4 @@ Built as a learning project to practice full-stack development, authentication, 
 
 ## Author
 
-**Ari** · [GitHub](https://github.com/Muhammadsharif-21) · [LinkedIn](https://www.linkedin.com/in/your-profile)
+**Ari** · [GitHub](https://github.com/Muhammadsharif-21) · [LinkedIn](https://www.linkedin.com/in/muahammad-sharif-9b0412240/)
